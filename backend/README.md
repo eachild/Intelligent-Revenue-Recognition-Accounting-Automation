@@ -1,20 +1,18 @@
 
-# AccrueSmart Backend (Extended)
+# AccrueSmart Backend (Consolidated + Variable Consideration + Streamlit)
 
-## Run
+Run:
 ```
+cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload --port 8011
 ```
 
-## Endpoints
-- `POST /contracts/allocate` → relative SSP allocation + schedules + commission
-- `POST /reports/disclosure` → writes PDF disclosure to `./out/Disclosure_<contract>.pdf`
-- `POST /post/journal` → writes journal entries to `./out/journal_entries.csv`
-- `POST /ai/parse_text` → heuristic PO extraction from raw contract text
+New endpoints:
+- `GET /contracts/list` — list stored contracts
+- `POST /contracts/save` — save a contract JSON to the repository
+- `POST /reports/disclosure/consolidated` — consolidated CSV across multiple or all contracts
 
-## Tests
-```
-pytest -q
-```
+Variable consideration fields:
+- `variable.returns_rate` (0..1), `variable.loyalty_pct` (0..1), `variable.loyalty_months`, `variable.loyalty_breakage_rate`

@@ -1,6 +1,6 @@
 
 import os, csv
-from typing import Dict
+from typing import Dict, List
 
 class CSVLedger:
     def __init__(self, folder:str='./out'):
@@ -30,3 +30,20 @@ def post_commission_schedule(ledger:CSVLedger, contract_id:str, comm:Dict[str,fl
     for period, amt in sorted(comm.items()):
         results.append(ledger.post(period, expense_acct, deferred_cost_acct, amt, f"Commission amortization {contract_id}", contract_id))
     return results
+
+def post_returns_at_inception(ledger:CSVLedger, contract_id:str, period:str, amounts:Dict[str,float]):
+    out=[]
+    if 'contra_revenue' in amounts and amounts['contra_revenue']>0:
+        out.append(ledger.post(period, '4800-Sales Returns & Allowances', '2350-Refund Liability', amounts['contra_revenue'], 'Expected returns (contra revenue)', contract_id))
+    if 'returns_asset' in amounts and amounts['returns_asset']>0:
+        out.append(ledger.post(period, '1405-Returns Asset', '5000-Cost of Sales', amounts['returns_asset'], 'Expected return asset recognized', contract_id))
+    return out
+
+def post_loyalty_defer(ledger:CSVLedger, contract_id:str, period:str, loyalty_deferred:float):
+    return [ledger.post(period, '2105-Loyalty Deferred Revenue', '4000-Revenue', loyalty_deferred, 'Defer loyalty material right', contract_id)]
+
+def post_loyalty_recognition(ledger:CSVLedger, contract_id:str, schedule:Dict[str,float]):
+    out=[]
+    for period, amt in sorted(schedule.items()):
+        out.append(ledger.post(period, '2105-Loyalty Deferred Revenue', '4000-Revenue', amt, 'Recognize loyalty revenue', contract_id))
+    return out
