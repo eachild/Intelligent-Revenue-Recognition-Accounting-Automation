@@ -1,0 +1,175 @@
+### Health Check
+GET http://localhost:8011/health
+Accept: application/json
+
+
+### Point-in-Time Allocation
+POST http://localhost:8011/contracts/allocate
+Content-Type: application/json
+
+{
+  "contract_id": "C-001",
+  "customer": "ACME Corp",
+  "transaction_price": 10000,
+  "pos": [
+    {
+      "po_id": "PO-1",
+      "description": "Hardware Delivery",
+      "ssp": 10000,
+      "method": "point_in_time",
+      "start_date": null,
+      "end_date": null,
+      "params": {}
+    }
+  ]
+}
+
+
+### Straight-Line Allocation
+POST http://localhost:8011/contracts/allocate
+Content-Type: application/json
+
+{
+  "contract_id": "C-002",
+  "customer": "Beta Systems",
+  "transaction_price": 12000,
+  "pos": [
+    {
+      "po_id": "PO-2",
+      "description": "12-Month SaaS License",
+      "ssp": 12000,
+      "method": "straight_line",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "params": {}
+    }
+  ]
+}
+
+
+### Milestone-Based Allocation
+POST http://localhost:8011/contracts/allocate
+Content-Type: application/json
+
+{
+  "contract_id": "C-003",
+  "customer": "Innovate Solutions",
+  "transaction_price": 50000,
+  "pos": [
+    {
+      "po_id": "PO-3",
+      "description": "Custom Development",
+      "ssp": 50000,
+      "method": "milestone",
+      "start_date": "2025-02-01",
+      "end_date": "2025-09-30",
+      "params": {
+        "milestones": [
+          {
+            "id": "M1",
+            "description": "Kickoff",
+            "percent_of_price": 0.20,
+            "met_date": "2025-02-15"
+          },
+          {
+            "id": "M2",
+            "description": "Alpha Delivery",
+            "percent_of_price": 0.30,
+            "met_date": null
+          },
+          {
+            "id": "M3",
+            "description": "Final Delivery",
+            "percent_of_price": 0.50,
+            "met_date": null
+          }
+        ]
+      }
+    }
+  ]
+}
+
+
+### Percent-Complete Allocation
+POST http://localhost:8011/contracts/allocate
+Content-Type: application/json
+
+{
+  "contract_id": "C-004",
+  "customer": "BuildIt Corp",
+  "transaction_price": 80000,
+  "pos": [
+    {
+      "po_id": "PO-4",
+      "description": "Construction Project",
+      "ssp": 80000,
+      "method": "percent_complete",
+      "start_date": "2025-01-01",
+      "end_date": "2025-06-30",
+      "params": {
+        "percent_schedule": [
+          { "period": "2025-01", "percent": 0.10 },
+          { "period": "2025-02", "percent": 0.20 },
+          { "period": "2025-03", "percent": 0.30 },
+          { "period": "2025-04", "percent": 0.20 },
+          { "period": "2025-05", "percent": 0.10 },
+          { "period": "2025-06", "percent": 0.10 }
+        ]
+      }
+    }
+  ]
+}
+
+
+### Commissions - Immediate Expense
+POST http://localhost:8011/contracts/allocate
+Content-Type: application/json
+
+{
+  "contract_id": "C-005",
+  "customer": "FinTech Co",
+  "transaction_price": 30000,
+  "pos": [
+    {
+      "po_id": "PO-5",
+      "description": "SaaS License",
+      "ssp": 30000,
+      "method": "straight_line",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "params": {}
+    }
+  ],
+  "commissions": {
+    "amount": 3000,
+    "months": 0,
+    "expedient": true
+  }
+}
+
+
+### Commissions - Amortized
+POST http://localhost:8011/contracts/allocate
+Content-Type: application/json
+
+{
+  "contract_id": "C-006",
+  "customer": "EduTech Inc.",
+  "transaction_price": 60000,
+  "pos": [
+    {
+      "po_id": "PO-6",
+      "description": "Software License",
+      "ssp": 60000,
+      "method": "straight_line",
+      "start_date": "2025-01-01",
+      "end_date": "2025-12-31",
+      "params": {}
+    }
+  ],
+  "commissions": {
+    "amount": 6000,
+    "months": 12,
+    "expedient": false
+  }
+}
