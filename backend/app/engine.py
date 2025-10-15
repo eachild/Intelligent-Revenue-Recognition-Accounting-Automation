@@ -1,0 +1,125 @@
+from datetime import date
+from typing import Dict, List
+
+# Helper function to add months to a date
+def add_months(d:date,n:int)->date: 
+    y=d.year+(d.month-1+n)//12
+    m=((d.month-1+n)%12)+1
+    return date(y,m,1)
+
+# Generate a list of months between two dates (inclusive)
+def daterange_months(start:date,end:date):
+    # More explicit date validation
+    if end < start:
+        return []
+    
+    # Generate months
+    cur=date(start.year,start.month,1); last=date(end.year,end.month,1)
+    while cur<=last: yield cur; cur=add_months(cur,1)
+
+"""
+Core relative SSP (Standalone Selling Price) allocation involves
+a mathematical process to distribute a total transaction price
+among different performance obligations (goods or services) within
+a contract based on their relative standalone selling prices.
+This ensures that the transaction price is allocated proportionally,
+reflecting the individual value of each component.
+Contract total price (Transaction Price): $500
+Performance Obligation 1: Software: SSP = $800
+Performance Obligation 2: Training: SSP = $200
+Total SSP: $800 (Software) + $200 (Training) = $1,000
+SSP Ratios:
+    Software: $800 / $1,000 = 80%
+    Training: $200 / $1,000 = 20%
+Allocated Amounts:
+    Software: 80% x $500 = $400
+    Training: 20% x $500 = $100
+The $500 transaction price is now split, with $400 attributed to the
+software and $100 to the training, based on their relative standalone selling prices
+"""
+def allocate_relative_ssp(ssps:List[float], total:float)->List[float]:
+    # Handle empty case
+    if not ssps:
+        return []
+    
+    # Handle zero total SSP case - distribute evenly
+    total_ssp = sum(ssps)
+    if total_ssp == 0:
+        equal_share = round(total / len(ssps), 2) if len(ssps) > 0 else 0
+        return [equal_share] * len(ssps)
+    
+    # Calculate allocations using precise math first, then round at the end
+    allocations = []
+    running_total = 0.0
+    
+    # Allocate for all but the last item using precise calculation
+    for i in range(len(ssps) - 1):
+        ratio = ssps[i] / total_ssp
+        allocated_amount = total * ratio
+        rounded_amount = round(allocated_amount, 2)
+        allocations.append(rounded_amount)
+        running_total += rounded_amount
+    
+    # Last item gets the remaining amount to ensure perfect total
+    last_allocation = round(total - running_total, 2) # Rounds to 2 decimal places
+    allocations.append(last_allocation)
+    return allocations
+
+"""
+ASC 606 straight-line revenue recognition for performance obligations
+satisfied over time. Use for subscription services, maintenance contracts,
+or other continuous service obligations.
+Example: 12-month software license for $1,200 -> $100/month
+"""
+def straight_line(price:float,start:date,end:date)->Dict[str,float]:
+    if end < start:
+        raise ValueError("End date must be after start date")
+    if price < 0:
+        raise ValueError("Price cannot be negative")
+    
+    months=list(daterange_months(start,end)); # Generate list of months
+    if not months: return {}
+    per=round(price/len(months),2); out={f"{d.year}-{d.month:02d}":per for d in months}
+    k=f"{months[-1].year}-{months[-1].month:02d}"; out[k]=round(price-sum(v for kk,v in out.items() if kk!=k),2); return out
+
+# Point-in-time allocation on a specific date
+# One-time revenue recognition for goods/deliverables (e.g., physical product delivery)
+def point_in_time(price:float,at:date)->Dict[str,float]: return {f"{at.year}-{at.month:02d}":float(price)}
+
+# Milestone-based allocation
+# Milestones: Revenue recognized when specific contract milestones are met (e.g., project phases completed)
+def milestones(price:float, ms:List[Dict])->Dict[str,float]:
+    total_percent = sum(m.get("percent_of_price", 0.0) for m in ms)
+    # Validate that total percentage is approximately 100%; might be a bad idea
+    if abs(total_percent - 1.0) > 0.01:  # Allow small floating-point tolerance
+        raise ValueError(f"Milestone percentages must sum to 100%, got {total_percent*100}%")
+    
+    out={}
+    for m in ms:
+        pct=float(m.get("percent_of_price",0.0)); met=m.get("met_date"); 
+        if not met: continue
+        from datetime import date as _d; dt=_d.fromisoformat(met); key=f"{dt.year}-{dt.month:02d}"
+        out[key]=round(out.get(key,0.0)+pct*price,2)
+    return out
+
+# Percent-complete allocation
+# Percent-complete: Revenue based on cumulative progress (e.g., construction projects)
+def percent_complete(price:float, sched:List[Dict])->Dict[str,float]:
+    out={}; prev=0.0
+    for r in sched:
+        cum=float(r.get("percent_cumulative",0.0)); delta=max(0.0,cum-prev); out[r["period"]]=round(price*delta,2); prev=cum
+    return out
+
+def amortize_commission(total:float, months:int, start:date)->Dict[str,float]:
+    if months<=0: return {}
+    months_list=[add_months(start,i) for i in range(months)]; per=round(total/months,2)
+    out={f"{d.year}-{d.month:02d}":per for d in months_list}
+    k=f"{months_list[-1].year}-{months_list[-1].month:02d}"; out[k]=round(total-sum(v for kk,v in out.items() if kk!=k),2); return out
+
+"""
+Recommendations for further enhancements:
+Adding the validation improvements above
+Considering timezone-aware datetime handling if dealing with international contracts
+Adding logging for audit trails
+Extending with the variable consideration features mentioned in your project docs (returns, breakage, etc.)
+"""

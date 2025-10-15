@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, UploadFile, File, Body
 from .schemas import ContractIn, AllocationResponse, AllocResult
-from . import engine as rev, ocr, ai
+from . import engine2 as rev, ocr, ai
 from datetime import date
 from typing import Dict
 
