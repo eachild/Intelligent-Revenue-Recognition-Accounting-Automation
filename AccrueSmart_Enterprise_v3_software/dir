@@ -1,0 +1,149 @@
+total 16
+-rw-r--r--@ 1 jaideepmanwani  staff  123 Oct  4 07:56 README.md
+-rw-r--r--@ 1 jaideepmanwani  staff  705 Oct  4 07:56 docker-compose.yml
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:13 ops
+drwxr-xr-x@ 5 jaideepmanwani  staff  160 Oct  5 00:20 revrec
+drwxr-xr-x  4 jaideepmanwani  staff  128 Oct  5 00:34 legacy
+-rw-r--r--  1 jaideepmanwani  staff    0 Oct  5 00:35 dir
+
+./ops:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  520 Oct  4 07:56 nginx.conf
+
+./revrec:
+total 0
+drwxr-xr-x@ 6 jaideepmanwani  staff  192 Oct  5 00:13 frontend
+drwxr-xr-x@ 6 jaideepmanwani  staff  192 Oct  5 00:20 backend
+
+./revrec/frontend:
+total 24
+-rw-r--r--@ 1 jaideepmanwani  staff   79 Oct  4 07:56 tailwind.config.js
+-rw-r--r--@ 1 jaideepmanwani  staff   59 Oct  4 07:56 postcss.config.js
+-rw-r--r--@ 1 jaideepmanwani  staff  326 Oct  4 07:56 package.json
+drwxr-xr-x@ 5 jaideepmanwani  staff  160 Oct  5 00:13 src
+
+./revrec/frontend/src:
+total 0
+drwxr-xr-x@ 6 jaideepmanwani  staff  192 Oct  5 00:13 app
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:13 lib
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:13 components
+
+./revrec/frontend/src/app:
+total 24
+-rw-r--r--@ 1 jaideepmanwani  staff  109 Oct  4 07:56 page.tsx
+-rw-r--r--@ 1 jaideepmanwani  staff  442 Oct  4 07:56 layout.tsx
+-rw-r--r--@ 1 jaideepmanwani  staff   99 Oct  4 07:56 globals.css
+drwxr-xr-x@ 4 jaideepmanwani  staff  128 Oct  5 00:13 revrec
+
+./revrec/frontend/src/app/revrec:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  67 Oct  4 07:56 page.tsx
+drwxr-xr-x@ 3 jaideepmanwani  staff  96 Oct  5 00:13 ingest
+
+./revrec/frontend/src/app/revrec/ingest:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  833 Oct  4 07:56 page.tsx
+
+./revrec/frontend/src/lib:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  479 Oct  4 07:56 api.ts
+
+./revrec/frontend/src/components:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  557 Oct  4 07:56 ui.tsx
+
+./revrec/backend:
+total 16
+-rw-r--r--@ 1 jaideepmanwani  staff  152 Oct  4 07:56 requirements.txt
+-rw-r--r--@ 1 jaideepmanwani  staff  189 Oct  4 07:56 Dockerfile
+drwxr-xr-x@ 8 jaideepmanwani  staff  256 Oct  5 00:13 app
+
+./revrec/backend/app:
+total 40
+-rw-r--r--@ 1 jaideepmanwani  staff   898 Oct  4 07:56 schemas.py
+-rw-r--r--@ 1 jaideepmanwani  staff   157 Oct  4 07:56 ocr.py
+-rw-r--r--@ 1 jaideepmanwani  staff  1785 Oct  4 07:56 main.py
+-rw-r--r--@ 1 jaideepmanwani  staff  1136 Oct  4 07:56 engine.py
+-rw-r--r--@ 1 jaideepmanwani  staff  1059 Oct  4 07:56 ai.py
+-rw-r--r--@ 1 jaideepmanwani  staff     0 Oct  4 07:56 __init__.py
+
+./legacy:
+total 0
+drwxr-xr-x@ 5 jaideepmanwani  staff  160 Oct  5 00:34 backend
+drwxr-xr-x@ 6 jaideepmanwani  staff  192 Oct  5 00:34 frontend
+
+./legacy/backend:
+total 8
+drwxr-xr-x@ 13 jaideepmanwani  staff  416 Oct  5 00:34 app
+-rw-r--r--@  1 jaideepmanwani  staff  152 Oct  5 00:34 requirements.txt
+
+./legacy/backend/app:
+total 96
+-rw-r--r--@ 1 jaideepmanwani  staff  1424 Oct  5 00:34 sfc_effective.py
+-rw-r--r--@ 1 jaideepmanwani  staff    61 Oct  5 00:34 util.py
+-rw-r--r--@ 1 jaideepmanwani  staff  1754 Oct  5 00:34 consolidation.py
+-rw-r--r--@ 1 jaideepmanwani  staff   750 Oct  5 00:34 ledger.py
+-rw-r--r--@ 1 jaideepmanwani  staff     0 Oct  5 00:34 __init__.py
+-rw-r--r--@ 1 jaideepmanwani  staff   263 Oct  5 00:34 ocr.py
+-rw-r--r--@ 1 jaideepmanwani  staff  1753 Oct  5 00:34 engine.py
+-rw-r--r--@ 1 jaideepmanwani  staff  3782 Oct  5 00:34 schemas.py
+-rw-r--r--@ 1 jaideepmanwani  staff  4829 Oct  5 00:34 nlp_rules.py
+-rw-r--r--@ 1 jaideepmanwani  staff  6513 Oct  5 00:34 main.py
+-rw-r--r--@ 1 jaideepmanwani  staff  1059 Oct  5 00:34 reporting.py
+
+./legacy/frontend:
+total 24
+-rw-r--r--@ 1 jaideepmanwani  staff   92 Oct  5 00:34 tailwind.config.js
+-rw-r--r--@ 1 jaideepmanwani  staff  454 Oct  5 00:34 package.json
+-rw-r--r--@ 1 jaideepmanwani  staff   70 Oct  5 00:34 postcss.config.js
+drwxr-xr-x@ 4 jaideepmanwani  staff  128 Oct  5 00:34 src
+
+./legacy/frontend/src:
+total 0
+drwxr-xr-x@ 12 jaideepmanwani  staff  384 Oct  5 00:34 app
+drwxr-xr-x@  3 jaideepmanwani  staff   96 Oct  5 00:34 lib
+
+./legacy/frontend/src/app:
+total 24
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 chat
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 sfc
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 ingest
+-rw-r--r--@ 1 jaideepmanwani  staff  907 Oct  5 00:34 layout.tsx
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 mods
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 allocate
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 consolidation
+-rw-r--r--@ 1 jaideepmanwani  staff  265 Oct  5 00:34 page.tsx
+-rw-r--r--@ 1 jaideepmanwani  staff  104 Oct  5 00:34 globals.css
+drwxr-xr-x@ 3 jaideepmanwani  staff   96 Oct  5 00:34 reports
+
+./legacy/frontend/src/app/chat:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  844 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/app/sfc:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  1574 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/app/ingest:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  1066 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/app/mods:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  1155 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/app/allocate:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  1145 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/app/consolidation:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  2128 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/app/reports:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  4026 Oct  5 00:34 page.tsx
+
+./legacy/frontend/src/lib:
+total 8
+-rw-r--r--@ 1 jaideepmanwani  staff  359 Oct  5 00:34 api.ts

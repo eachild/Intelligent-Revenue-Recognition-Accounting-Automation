@@ -1,0 +1,27 @@
+
+version: "3.9"
+services:
+  revrec-backend:
+    build: ./revrec/backend
+    ports: ["8050:8050"]
+    environment: [LLM_PROVIDER=mock]
+    volumes: ["./revrec/backend/out:/app/out"]
+
+  revrec-frontend:
+    build: ./revrec/frontend
+    environment: [NEXT_PUBLIC_API_BASE=http://localhost:8050, NEXT_PUBLIC_API_KEY=demo-admin-key]
+    ports: ["3060:3060"]
+
+  legacy-backend:
+    build: ./legacy/backend
+    ports: ["8080:8080"]
+
+  legacy-frontend:
+    build: ./legacy/frontend
+    ports: ["5173:5173"]
+
+  nginx:
+    image: nginx:alpine
+    depends_on: [revrec-frontend, legacy-frontend, revrec-backend, legacy-backend]
+    ports: ["80:80"]
+    volumes: ["./ops/nginx.conf:/etc/nginx/conf.d/default.conf:ro"]
