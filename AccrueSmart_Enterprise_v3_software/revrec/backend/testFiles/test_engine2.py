@@ -1,6 +1,6 @@
 import unittest
 from datetime import date
-from AccrueSmart_Enterprise_v3_software.revrec.backend.app.engine2 import add_months, daterange_months, allocate_relative_ssp, straight_line, point_in_time
+from AccrueSmart_Enterprise_v3_software.revrec.backend.app.engine import add_months, daterange_months, allocate_relative_ssp, straight_line, point_in_time
 
 class TestEngineFunctions(unittest.TestCase):
     #test add_monthspython test_engine.py
