@@ -4,38 +4,121 @@ from typing import Dict, List, Optional
 import os
 from datetime import date
 from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, ConsolidationIn, PerformanceObligationIn
-from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting
+from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable
 from .ledger import CSVLedger
+
 
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart RevRec Superset', version='3.0')
 
-# build_allocation: expanded to support milestone and percent_complete and to use PO params
+# # build_allocation: expanded to support milestone and percent_complete and to use PO params
+# def build_allocation(contract: ContractIn) -> AllocationResponse:
+#     ssps=[po.ssp for po in contract.pos]; allocated=rev.allocate_relative_ssp(ssps, contract.transaction_price)
+#     schedules:Dict[str,Dict[str,float]]={}; allocated_res=[]
+#     for po, alloc in zip(contract.pos, allocated):
+#         allocated_res.append(AllocResult(po_id=po.po_id, ssp=po.ssp, allocated_price=alloc))
+#         if po.method=='straight_line' and po.start_date and po.end_date:
+#             schedules[po.po_id]=rev.straight_line(alloc, date.fromisoformat(po.start_date), date.fromisoformat(po.end_date))
+#         elif po.method=='point_in_time' and po.start_date:
+#             schedules[po.po_id]=rev.point_in_time(alloc, date.fromisoformat(po.start_date))
+#         elif po.method=='milestone':
+#             # po.params.milestones may be pydantic models; convert to dicts if needed
+#             ms = []
+#             for m in getattr(po.params, 'milestones', []):
+#                 if hasattr(m, 'model_dump'):
+#                     ms.append(m.model_dump())
+#                 elif hasattr(m, 'dict'):
+#                     ms.append(m.dict())
+#                 else:
+#                     ms.append(m)
+#             schedules[po.po_id]=rev.milestones(alloc, ms)
+#         elif po.method=='percent_complete':
+#             schedules[po.po_id]=rev.percent_complete(alloc, po.params.percent_schedule)
+#         else:
+#             schedules[po.po_id]={}
+#     return AllocationResponse(allocated=allocated_res, schedules=schedules)
+
 def build_allocation(contract: ContractIn) -> AllocationResponse:
-    ssps=[po.ssp for po in contract.pos]; allocated=rev.allocate_relative_ssp(ssps, contract.transaction_price)
-    schedules:Dict[str,Dict[str,float]]={}; allocated_res=[]
+    
+    current_price = contract.transaction_price
+    adjustments = {} # To store our new VC results
+    
+    # HANDLE VARIABLE CONSIDERATION (STEP 3) 
+    if contract.variable:
+        
+        # Adjust for Loyalty Points (Material Right)
+        if contract.variable.loyalty_pct > 0.0:
+            
+            # Calculate the value of the liability for loyalty points
+            loyalty_liability = variable.loyalty_liability_allocation(
+                current_price, 
+                contract.variable.loyalty_pct
+            )
+            
+            # The transaction price to be allocated to other POs is *net* of this liability
+            current_price = current_price - loyalty_liability
+            adjustments["loyalty_deferred_revenue"] = loyalty_liability
+            
+            # Also calculate the recognition schedule for this loyalty liability
+            if contract.pos:
+                # Use the first PO's start date as a simple proxy for the schedule start
+                start_date = date.fromisoformat(contract.pos[0].start_date)
+                adjustments["loyalty_recognition_schedule"] = variable.loyalty_recognition_schedule(
+                    loyalty_liability,
+                    start_date,
+                    contract.variable.loyalty_months,
+                    contract.variable.loyalty_breakage_rate
+                )
+
+    # ALLOCATE THE PRICE (STEP 4) 
+    ssps = [po.ssp for po in contract.pos]
+    allocated = rev.allocate_relative_ssp(ssps, current_price)
+    
+    schedules: Dict[str, Dict[str, float]] = {}
+    allocated_res = []
+    total_point_in_time_revenue = 0.0 
+    
+    # BUILD REVENUE SCHEDULES (STEP 5) 
     for po, alloc in zip(contract.pos, allocated):
         allocated_res.append(AllocResult(po_id=po.po_id, ssp=po.ssp, allocated_price=alloc))
-        if po.method=='straight_line' and po.start_date and po.end_date:
-            schedules[po.po_id]=rev.straight_line(alloc, date.fromisoformat(po.start_date), date.fromisoformat(po.end_date))
-        elif po.method=='point_in_time' and po.start_date:
-            schedules[po.po_id]=rev.point_in_time(alloc, date.fromisoformat(po.start_date))
-        elif po.method=='milestone':
-            # po.params.milestones may be pydantic models; convert to dicts if needed
+        
+        if po.method == 'straight_line' and po.start_date and po.end_date:
+            schedules[po.po_id] = rev.straight_line(alloc, date.fromisoformat(po.start_date), date.fromisoformat(po.end_date))
+        
+        elif po.method == 'point_in_time' and po.start_date:
+            schedules[po.po_id] = rev.point_in_time(alloc, date.fromisoformat(po.start_date))
+            # Keep track of revenue recognized at a point-in-time
+            total_point_in_time_revenue += alloc
+        
+        elif po.method == 'milestone':
             ms = []
             for m in getattr(po.params, 'milestones', []):
-                if hasattr(m, 'model_dump'):
-                    ms.append(m.model_dump())
-                elif hasattr(m, 'dict'):
-                    ms.append(m.dict())
-                else:
-                    ms.append(m)
+                 if hasattr(m, 'model_dump'): ms.append(m.model_dump())
+                 elif hasattr(m, 'dict'): ms.append(m.dict())
+                 else: ms.append(m)
             schedules[po.po_id]=rev.milestones(alloc, ms)
-        elif po.method=='percent_complete':
+
+        elif po.method == 'percent_complete':
             schedules[po.po_id]=rev.percent_complete(alloc, po.params.percent_schedule)
+            
         else:
-            schedules[po.po_id]={}
-    return AllocationResponse(allocated=allocated_res, schedules=schedules)
+            schedules[po.po_id] = {}
+
+    # HANDLE RETURNS ADJUSTMENT (STEP 3) 
+    if contract.variable and contract.variable.returns_rate > 0.0:
+        
+        # Calculate the refund liability based on the PoT revenue
+        returns_adj = variable.expected_returns_adjustment(
+            total_point_in_time_revenue,
+            contract.variable.returns_rate
+        )
+        adjustments["returns_adjustment"] = returns_adj
+
+    return AllocationResponse(
+        allocated=allocated_res, 
+        schedules=schedules,
+        adjustments=adjustments
+    )
 
 @app.get('/health')
 def health(): return {'ok':True}

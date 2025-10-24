@@ -66,6 +66,7 @@ class CommissionPlanIn(BaseModel):
     total_commission: float
     benefit_months: int = 12
     practical_expedient_1yr: bool = False
+    
 
 class ContractIn(BaseModel):
     contract_id: str
