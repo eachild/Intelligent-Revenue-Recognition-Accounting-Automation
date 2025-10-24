@@ -11,7 +11,8 @@ from .ledger import CSVLedger
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart Ultimate v2.1', version='2.1')
 
-@app.get('/health') def health(): return {'ok':True}
+@app.get('/health') 
+def health(): return {'ok':True}
 
 def build_allocation(contract: ContractIn) -> AllocationResponse:
     ssps=[po.ssp for po in contract.pos]; allocated=rev.allocate_relative_ssp(ssps, contract.transaction_price)

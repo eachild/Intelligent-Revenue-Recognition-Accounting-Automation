@@ -3,7 +3,7 @@ from fastapi import FastAPI, UploadFile, File, Body
 from .schemas import ContractIn, AllocationResponse, AllocResult
 from . import engine as rev, ocr, ai
 from datetime import date
-from typing import Dict
+from typing import 
 
 app=FastAPI(title='AccrueSmart RevRec API', version='3.0')
 
@@ -23,14 +23,18 @@ def build_allocation(contract: ContractIn) -> AllocationResponse:
         elif po.method=='point_in_time' and po.start_date:
             schedules[po.po_id]=rev.point_in_time(alloc, date.fromisoformat(po.start_date))
     return AllocationResponse(allocated=allocated_res, schedules=schedules)
+
 @app.get('/health')
 def health(): return {"ok":True}
+
 @app.post('/contracts/allocate', response_model=AllocationResponse)
 def allocate(c: ContractIn): return build_allocation(c)
+
 @app.post('/ingest/text')
 def ingest_text(filename:str=Body(...), text:str=Body(...)):
     std, reason = ai.classify_standard(text); pos=ai.extract_pos(text); risks=ai.detect_risks(text); rec=ai.recommend_language(text)
     return {"standard":std,"standard_reason":reason,"performance_obligations":pos,"risks":risks,"recommendations":rec}
+
 @app.post('/ingest/pdf')
 async def ingest_pdf(file: UploadFile = File(...)):
     text = ocr.extract_text_from_pdf_bytes(await file.read())
