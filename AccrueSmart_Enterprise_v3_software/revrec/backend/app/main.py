@@ -43,46 +43,119 @@ def health(): return {'ok':True}
 @app.post('/contracts/allocate', response_model=AllocationResponse)
 def allocate(c: ContractIn): return build_allocation(c)
 
+def calculate_catchup_adjustment(base_contract: ContractIn, modification: Dict) -> Dict:
+    
+    # Old vs. New 
+    old_schedules = build_allocation(base_contract).schedules
+    
+    new_contract = _create_modified_contract(base_contract, modification)
+    new_schedules = build_allocation(new_contract).schedules
+
+    # Sum Schedules by Period 
+    old_sum = _sum_schedules_by_period(old_schedules)
+    new_sum = _sum_schedules_by_period(new_schedules)
+    
+    # Calculate Delta and Catch-up 
+    all_periods = set(list(old_sum.keys()) + list(new_sum.keys()))
+    delta_by_period = {
+        period: round(new_sum.get(period, 0.0) - old_sum.get(period, 0.0), 2)
+        for period in all_periods
+    }
+    
+    effective_month = modification['effective_date'][:7] # Assumes "YYYY-MM"
+    catchup_amount = sum(amount for period, amount in delta_by_period.items() if period < effective_month)
+
+    final_schedule = {}
+    # Add all old periods before the change
+    for period, amount in old_sum.items():
+        if period < effective_month:
+            final_schedule[period] = round(final_schedule.get(period, 0.0) + amount, 2)
+            
+    # Add all new periods on or after the change
+    for period, amount in new_sum.items():
+        if period >= effective_month:
+            final_schedule[period] = round(final_schedule.get(period, 0.0) + amount, 2)
+            
+    # Add the catch-up amount to the effective month
+    final_schedule[effective_month] = round(final_schedule.get(effective_month, 0.0) + catchup_amount, 2)
+
+    # Prepare Journal Entry Data (no post)
+    journal_entry_data = {
+        'period': effective_month,
+        'debit_acct': '2100-Deferred Revenue',
+        'credit_acct': '4000-Revenue',
+        'amount': catchup_amount,
+        'memo': f"Catch-up on modification for {base_contract.contract_id}"
+    }
+
+    return {
+        'old': old_sum,
+        'new': new_sum,
+        'delta_by_period': delta_by_period,
+        'effective_catchup_month': effective_month,
+        'catchup_amount': round(catchup_amount, 2),
+        'final_schedule': final_schedule,
+        'journal_entry_data': journal_entry_data
+    }
+
 @app.post('/contracts/modify/catchup')
 def modify_catchup(base: ContractIn, modification: Dict):
-    old = build_allocation(base)
-    # Filter out removed POs
-    existing_pos = [p for p in base.pos if p.po_id not in modification.get('remove_po_ids',[])]
-    # Convert new PO dicts into Pydantic models
-    new_pos_list = [PerformanceObligationIn(**p) for p in modification.get('add_pos',[])]
-    # Combine the lists
-    pos = existing_pos + new_pos_list
-    # model_copy used in v2; fallback to dict update if not present
-    try:
-        new = base.model_copy(update={'transaction_price': round(base.transaction_price + modification.get('transaction_price_delta',0.0),2), 'pos': pos})
-    except Exception:
-        d = base.dict() if hasattr(base, 'dict') else base.__dict__
-        d.update({'transaction_price': round(base.transaction_price + modification.get('transaction_price_delta',0.0),2), 'pos': pos})
-        from pydantic import parse_obj_as
-        new = parse_obj_as(type(base), d)
-        
-    new_res = build_allocation(new)
-
-    def sum_map(m):
-        out={}
-        for _,sched in m.items():
-            for p,a in sched.items(): out[p]=round(out.get(p,0.0)+float(a),2)
-        return out
+    """
+    Endpoint to process a contract modification.
+    """
+    results = calculate_catchup_adjustment(base, modification)
+    ledger = CSVLedger(OUT_DIR)
+    je_data = results['journal_entry_data']
     
-    old_sum=sum_map(old.schedules); new_sum=sum_map(new_res.schedules)
-    periods=set(list(old_sum.keys())+list(new_sum.keys())); delta={p: round(new_sum.get(p,0.0)-old_sum.get(p,0.0),2) for p in periods}
-    eff_key=modification['effective_date'][:7]; catchup=sum(v for k,v in delta.items() if k<eff_key)
+    je = ledger.post(
+        period=je_data['period'],
+        debit=je_data['debit_acct'],
+        credit=je_data['credit_acct'],
+        amount=je_data['amount'],
+        memo=je_data['memo'],
+        contract_id=base.contract_id
+    )
+    
+    results['journal_entry_posted'] = je
+    
+    return results
 
-    final={}
-    for p,a in old_sum.items():
-        if p<eff_key: final[p]=round(final.get(p,0.0)+a,2)
-    for p,a in new_sum.items():
-        if p>=eff_key: final[p]=round(final.get(p,0.0)+a,2)
+def _sum_schedules_by_period(schedules_by_po: Dict[str, Dict[str, float]]) -> Dict[str, float]:
+    """Helper to flatten PO schedules into a single sum by period."""
+    summed_schedule = {}
+    for po_schedule in schedules_by_po.values():
+        for period, amount in po_schedule.items():
+            summed_schedule[period] = round(summed_schedule.get(period, 0.0) + float(amount), 2)
+    return summed_schedule
 
-    final[eff_key]=round(final.get(eff_key,0.0)+catchup,2)
-    ledger=CSVLedger(OUT_DIR); je=ledger.post(eff_key,'2100-Deferred Revenue','4000-Revenue', catchup, f"Catch-up on modification", base.contract_id)
 
-    return {'old':old_sum,'new':new_sum,'delta_by_period':delta,'effective_catchup':eff_key,'catchup_amount':round(catchup,2),'final':final,'journal_entry':je}
+def _create_modified_contract(base: ContractIn, modification: Dict) -> ContractIn:
+    """
+    Robustly creates a new ContractIn object from a base and a modification dict.
+    Handles Pydantic v1/v2 compatibility.
+    """
+    
+    # Filter out removed POs
+    existing_pos = [p for p in base.pos if p.po_id not in modification.get('remove_po_ids', [])]
+    
+    # Convert new PO dicts into Pydantic models
+    new_pos_list = [PerformanceObligationIn(**p) for p in modification.get('add_pos', [])]
+
+    all_pos = existing_pos + new_pos_list
+    
+    # Calculate new price
+    new_price = round(base.transaction_price + modification.get('transaction_price_delta', 0.0), 2)
+    
+    # Handle Pydantic v1 vs v2
+    if hasattr(base, 'model_copy'):
+        # Pydantic v2 (preferred)
+        return base.model_copy(update={'transaction_price': new_price, 'pos': all_pos})
+    else:
+        # Pydantic v1 (fallback)
+        from pydantic import parse_obj_as
+        d = base.dict()
+        d.update({'transaction_price': new_price, 'pos': all_pos})
+        return parse_obj_as(type(base), d)
 
 @app.post('/sfc/schedule')
 def sfc_schedule(initial_carry: float = Body(...), payments: Dict[str, float] = Body(...), annual_rate: Optional[float] = Body(None)):
