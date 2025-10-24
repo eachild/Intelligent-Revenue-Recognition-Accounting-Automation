@@ -3,7 +3,7 @@ from fastapi.responses import FileResponse
 from typing import Dict, List, Optional
 import os
 from datetime import date
-from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, ConsolidationIn
+from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, ConsolidationIn, PerformanceObligationIn
 from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting
 from .ledger import CSVLedger
 
@@ -46,7 +46,12 @@ def allocate(c: ContractIn): return build_allocation(c)
 @app.post('/contracts/modify/catchup')
 def modify_catchup(base: ContractIn, modification: Dict):
     old = build_allocation(base)
-    pos = [p for p in base.pos if p.po_id not in modification.get('remove_po_ids',[])] + modification.get('add_pos',[])
+    # Filter out removed POs
+    existing_pos = [p for p in base.pos if p.po_id not in modification.get('remove_po_ids',[])]
+    # Convert new PO dicts into Pydantic models
+    new_pos_list = [PerformanceObligationIn(**p) for p in modification.get('add_pos',[])]
+    # Combine the lists
+    pos = existing_pos + new_pos_list
     # model_copy used in v2; fallback to dict update if not present
     try:
         new = base.model_copy(update={'transaction_price': round(base.transaction_price + modification.get('transaction_price_delta',0.0),2), 'pos': pos})
@@ -55,22 +60,28 @@ def modify_catchup(base: ContractIn, modification: Dict):
         d.update({'transaction_price': round(base.transaction_price + modification.get('transaction_price_delta',0.0),2), 'pos': pos})
         from pydantic import parse_obj_as
         new = parse_obj_as(type(base), d)
+        
     new_res = build_allocation(new)
+
     def sum_map(m):
         out={}
         for _,sched in m.items():
             for p,a in sched.items(): out[p]=round(out.get(p,0.0)+float(a),2)
         return out
+    
     old_sum=sum_map(old.schedules); new_sum=sum_map(new_res.schedules)
     periods=set(list(old_sum.keys())+list(new_sum.keys())); delta={p: round(new_sum.get(p,0.0)-old_sum.get(p,0.0),2) for p in periods}
     eff_key=modification['effective_date'][:7]; catchup=sum(v for k,v in delta.items() if k<eff_key)
+
     final={}
     for p,a in old_sum.items():
         if p<eff_key: final[p]=round(final.get(p,0.0)+a,2)
     for p,a in new_sum.items():
         if p>=eff_key: final[p]=round(final.get(p,0.0)+a,2)
+
     final[eff_key]=round(final.get(eff_key,0.0)+catchup,2)
     ledger=CSVLedger(OUT_DIR); je=ledger.post(eff_key,'2100-Deferred Revenue','4000-Revenue', catchup, f"Catch-up on modification", base.contract_id)
+
     return {'old':old_sum,'new':new_sum,'delta_by_period':delta,'effective_catchup':eff_key,'catchup_amount':round(catchup,2),'final':final,'journal_entry':je}
 
 @app.post('/sfc/schedule')
