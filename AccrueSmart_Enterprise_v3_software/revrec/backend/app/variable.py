@@ -76,10 +76,10 @@ def loyalty_recognition_schedule(
     Creates a straight-line recognition schedule for the loyalty liability.
     
     It recognizes the amount expected to be redeemed evenly over the
-    redemption period (`loyalty_months`)[cite: 368].
+    redemption period (`loyalty_months`)
     
     It recognizes the expected breakage in the final period as a 
-    simplification[cite: 400].
+    simplification
     """
     if months <= 0 or loyalty_liability == 0.0:
         return {}
