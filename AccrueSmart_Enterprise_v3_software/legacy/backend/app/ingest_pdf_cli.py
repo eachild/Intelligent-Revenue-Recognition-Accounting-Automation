@@ -1,7 +1,7 @@
 """Simple CLI to extract text from a PDF and run the project's NLP ingest logic.
 
-Usage (PowerShell):
-    python \legacy\backend\app\ingest_pdf_cli.py C:\path\to\file.pdf
+Usage (PowerShell/CMD):
+    python -m legacy.backend.app.ingest_pdf_cli "Path to file.pdf"
 
 This script avoids importing `main.py` (which pulls FastAPI at import time)
 and instead calls the same nlp_rules functions and builds an IngestResult.

@@ -1,0 +1,17 @@
+{
+  "base": {
+    "contract_id": "C-MOD-001",
+    "customer": "ModCo",
+    "transaction_price": 1200,
+    "pos": [
+      {"po_id":"PO-1","description":"Maintenance 12mo","ssp":1200,"method":"straight_line","start_date":"2025-01-01","end_date":"2025-12-01"}
+    ]
+  },
+  "modification": {
+    "transaction_price_delta": 300,
+    "effective_date": "2025-07-01",
+    "add_pos": [
+      {"po_id":"PO-2","description":"Consulting","ssp":300,"method":"point_in_time","start_date":"2025-07-01"}
+    ]
+  }
+}

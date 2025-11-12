@@ -1,0 +1,21 @@
+curl http://localhost:8011/health
+
+
+# Simulates file upload (POST ingest/pdf)
+curl -X POST http://localhost:8011/ingest/pdf -F "file=@sample_path\sample_contract.pdf"                                    [Works]
+
+# Raw file entry (POST ingest/text)
+curl -X POST http://localhost:8011/ingest/text -H "Content-Type: application/json" -d @sample_path\sample_data.json         [Works]
+
+# Allocation (POST contracts/allocate)
+curl -X POST http://localhost:8011/contracts/allocate -H "Content-Type: application/json" -d @allocate_payload.json         [Works]
+
+# Chat (POST /chat)
+curl -X POST http://localhost:8011/chat -H "Content-Type: text/plain" -d "how do I summarize a contract?"                   [Works]
+
+# Report Generation (POST /reports/disclosure_pack)
+curl -X POST http://localhost:8011/reports/disclosure_pack -H "Content-Type: application/json" -d @payload.json	            [Works]
+
+# File Download (GET /files/get)
+curl -o my_downloaded_report.pdf "http://localhost:8011/files/get?path=out/Disclosure_Pack.pdf"                             [Works]
+			

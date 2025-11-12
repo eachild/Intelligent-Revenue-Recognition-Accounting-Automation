@@ -1,3 +1,7 @@
+''' 
+The current engine covers only step 4 and 5 of the ASC 606 model
+'''
+
 from datetime import date
 from typing import Dict, List
 
