@@ -1,0 +1,1 @@
+export default function Trust(){ return <div>Trust Page</div>; }
