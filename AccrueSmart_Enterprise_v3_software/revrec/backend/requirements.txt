@@ -1,9 +1,9 @@
 
-fastapi==0.112.0
-uvicorn[standard]==0.30.0
-pydantic==2.7.4
-python-multipart==0.0.9
-pandas==2.2.2
-numpy==1.26.4
-reportlab==4.2.2
-pdfminer.six==20231228
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+pandas
+numpy
+reportlab
+pdfminer.six
