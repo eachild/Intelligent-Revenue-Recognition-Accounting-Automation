@@ -7,6 +7,21 @@ from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, 
 from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable
 from .ledger import CSVLedger
 
+# From routers/tax.py and services/asc_740.py
+from .routers import tax  # add import
+app.include_router(tax.router)  # add after other routers
+
+# From forecast.py
+from .routers import forecast   # add import
+app.include_router(forecast.router)
+
+# From auditor.py
+from .routers import auditor
+app.include_router(auditor.router)
+
+# From disclosure_pack.py
+from app.routers.disclosure_pack import router as disclosure_pack_router
+app.include_router(disclosure_pack_router)
 
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart RevRec Superset', version='3.0')
