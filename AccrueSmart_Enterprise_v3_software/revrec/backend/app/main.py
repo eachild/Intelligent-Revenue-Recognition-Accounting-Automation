@@ -8,11 +8,11 @@ from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, r
 from .ledger import CSVLedger
 
 # From routers/tax.py and services/asc_740.py
-from .routers import tax  # add import
+from .routers import tax
 app.include_router(tax.router)  # add after other routers
 
 # From forecast.py
-from .routers import forecast   # add import
+from .routers import forecast
 app.include_router(forecast.router)
 
 # From auditor.py
@@ -22,6 +22,14 @@ app.include_router(auditor.router)
 # From disclosure_pack.py
 from app.routers.disclosure_pack import router as disclosure_pack_router
 app.include_router(disclosure_pack_router)
+
+# From costs.py
+from .routers import costs
+app.include_router(costs.router)
+
+# From locks.py
+from .routers import locks
+app.include_router(locks.router)
 
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart RevRec Superset', version='3.0')
