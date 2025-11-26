@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 import os
 from datetime import date
 from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, ConsolidationIn, PerformanceObligationIn
-from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable
+from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable, parsing_pipeline
 from .ledger import CSVLedger
 
 # From routers/tax.py and services/asc_740.py
@@ -287,19 +287,7 @@ async def ingest_pdf(file: UploadFile = File(...)):
 def ingest_text(filename:str=Body(...), text:str=Body(...)): return analyze_text(filename, text)
 
 def analyze_text(filename:str, text:str)->IngestResult:
-    # prefer richer nlp_rules if available
-    try:
-        standard, reason = nlp_rules.detect_standard(text)
-        currency = nlp_rules.find_currency(text); price = nlp_rules.find_total_price(text)
-        pos = nlp_rules.extract_pos(text); risks = nlp_rules.detect_risks(text)
-        comm = nlp_rules.extract_commission(text); recs = nlp_rules.recommendations(text)
-        if standard == 'ASC606': summary = nlp_rules.summarize_revenue(text); nonrev=None
-        else: summary=None; nonrev = nlp_rules.summarize_nonrevenue(text)
-    except Exception:
-        # fallback to the lightweight ai module
-        standard, reason = ai.classify_standard(text); pos=ai.extract_pos(text); risks=ai.detect_risks(text); recs=ai.recommend_language(text)
-        currency=None; price=None; comm=None; summary=None; nonrev=None
-    return IngestResult(standard=standard, standard_reason=reason, currency=currency, transaction_price=price, performance_obligations=pos, risks=risks, commissions=comm, recommendations=recs, revenue_summary=summary, nonrevenue_summary=nonrev)
+    return parsing_pipeline.run_contract_parsing(text)
 
 @app.post('/chat')
 def chat(prompt:str=Body(...)):
