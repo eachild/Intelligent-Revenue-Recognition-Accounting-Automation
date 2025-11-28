@@ -1,4 +1,3 @@
-
 def classify_standard(text:str): 
     t=text.lower()
     if "lease" in t: return "ASC842","Lease keywords"

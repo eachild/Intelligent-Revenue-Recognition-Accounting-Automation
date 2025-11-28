@@ -16,7 +16,8 @@ the customer either redeems their points or the points expire (breakage).
 from datetime import date
 from typing import Dict
 
-from .engine import straight_line, add_months
+from app.schedule_logic import straight_line
+from app.util import add_months
 
 
 def expected_returns_adjustment(

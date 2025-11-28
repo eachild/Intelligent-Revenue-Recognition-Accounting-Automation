@@ -7,7 +7,7 @@ app.include_router(forecast.router)
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from typing import Dict, Literal, Optional
-from ..auth import require
+from app.auth import require
 from ..services.forecast import forecast_revenue
 
 router = APIRouter(prefix="/forecast", tags=["forecast"])

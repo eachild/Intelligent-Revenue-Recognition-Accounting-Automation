@@ -13,7 +13,7 @@ from typing import List, Dict, Any
 import json
 
 from app.schemas import ContractIn, AllocResult
-from app.reporting import summarize_schedules
+# from app.reporting import summarize_schedules
 from app.engine import build_allocation
 
 router = APIRouter(prefix="/reports", tags=["disclosure-pack"])

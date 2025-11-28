@@ -1,26 +1,11 @@
-''' 
-The current engine covers only step 4 and 5 of the ASC 606 model
-'''
-
 from datetime import date
 from typing import Dict, List
 
-# Helper function that adds "n" months to a date 
-# and returns the first day of the resulitng month
-def add_months(d:date, n:int) -> date:
-    y = d.year + (d.month - 1 + n) // 12
-    m = ((d.month - 1 + n) % 12) + 1
-    return date(y,m,1)
+from .schemas import ContractIn, AllocationResponse, AllocResult
+from . import variable
+from .schedule_logic import straight_line, point_in_time, milestones, percent_complete
+from .util import add_months
 
-# Generates all months between start and end dates (inclusive) as date objects
-def daterange_months(start:date,end:date):
-    cur=date(start.year,start.month,1)
-    last=date(end.year,end.month,1)
-
-    # Generate months
-    while cur<=last: 
-        yield cur
-        cur=add_months(cur,1)
 
 # Allocates a total price proportionally to a list of stand-alone selling prices (SSPs)
 # Rounds allocations to 2 decimals, adjusting the last one to match total exactly
@@ -44,57 +29,96 @@ def allocate_relative_ssp(ssps:List[float], total:float)->List[float]:
             out.append(round(total-run,2))
     return out
 
-# Generates a straight-line revenue recognition schedule over months
-def straight_line(price:float,start:date,end:date)->Dict[str,float]:
-    months=list(daterange_months(start,end)); 
-    if not months: 
-        return {}
-    
-    # Allocate equal amount per month (rounded to 2 decimals)
-    per=round(price/len(months),2)
-
-    # Create dictionary with keys "YYYY-MM" and value = amount per month
-    out={f"{d.year}-{d.month:02d}":per for d in months}
-
-    # Adjust the last month to ensure the sum matches total price exactly
-    k=f"{months[-1].year}-{months[-1].month:02d}"
-    out[k]=round(price-sum(v for kk,v in out.items() if kk!=k),2)
-    return out
-
-# Allocates revenue all at once at a single date
-# It returns a dictionary with key "YYYY-MM" and the full price
-def point_in_time(price:float,at:date)->Dict[str,float]: 
-    return {f"{at.year}-{at.month:02d}":float(price)}
-
-# Milestone-based allocation
-# Milestones: Revenue recognized when specific contract milestones are met (e.g., project phases completed)
-def milestones(price:float, ms:List[Dict])->Dict[str,float]:
-    total_percent = sum(m.get("percent_of_price", 0.0) for m in ms)
-    # Validate that total percentage is approximately 100%; might be a bad idea
-    if abs(total_percent - 1.0) > 0.01:  # Allow small floating-point tolerance
-        raise ValueError(f"Milestone percentages must sum to 100%, got {total_percent*100}%")
-    
-    out={}
-    for m in ms:
-        pct=float(m.get("percent_of_price",0.0)); met=m.get("met_date"); 
-        if not met: continue
-        from datetime import date as _d; dt=_d.fromisoformat(met); key=f"{dt.year}-{dt.month:02d}"
-        out[key]=round(out.get(key,0.0)+pct*price,2)
-    return out
-
-# Percent-complete allocation
-# Percent-complete: Revenue based on cumulative progress (e.g., construction projects)
-def percent_complete(price:float, sched:List[Dict])->Dict[str,float]:
-    out={}; prev=0.0
-    for r in sched:
-        cum=float(r.get("percent_cumulative",0.0)); delta=max(0.0,cum-prev); out[r["period"]]=round(price*delta,2); prev=cum
-    return out
 
 def amortize_commission(total:float, months:int, start:date)->Dict[str,float]:
     if months<=0: return {}
     months_list=[add_months(start,i) for i in range(months)]; per=round(total/months,2)
     out={f"{d.year}-{d.month:02d}":per for d in months_list}
     k=f"{months_list[-1].year}-{months_list[-1].month:02d}"; out[k]=round(total-sum(v for kk,v in out.items() if kk!=k),2); return out
+
+def build_allocation(contract: ContractIn) -> AllocationResponse:
+    
+    current_price = contract.transaction_price
+    adjustments = {} # To store our new VC results
+    
+    # HANDLE VARIABLE CONSIDERATION (STEP 3) 
+    if contract.variable:
+        
+        # Adjust for Loyalty Points (Material Right)
+        if contract.variable.loyalty_pct > 0.0:
+            
+            # Calculate the value of the liability for loyalty points
+            loyalty_liability = variable.loyalty_liability_allocation(
+                current_price, 
+                contract.variable.loyalty_pct
+            )
+            
+            # The transaction price to be allocated to other POs is *net* of this liability
+            current_price = current_price - loyalty_liability
+            adjustments["loyalty_deferred_revenue"] = loyalty_liability
+            
+            # Also calculate the recognition schedule for this loyalty liability
+            if contract.pos:
+                # Use the first PO's start date as a simple proxy for the schedule start
+                start_date = date.fromisoformat(contract.pos[0].start_date)
+                adjustments["loyalty_recognition_schedule"] = variable.loyalty_recognition_schedule(
+                    loyalty_liability,
+                    start_date,
+                    contract.variable.loyalty_months,
+                    contract.variable.loyalty_breakage_rate
+                )
+
+    # ALLOCATE THE PRICE (STEP 4) 
+    ssps = [po.ssp for po in contract.pos]
+    allocated = allocate_relative_ssp(ssps, current_price)
+    
+    schedules: Dict[str, Dict[str, float]] = {}
+    allocated_res = []
+    total_point_in_time_revenue = 0.0 
+    
+    # BUILD REVENUE SCHEDULES (STEP 5) 
+    for po, alloc in zip(contract.pos, allocated):
+        allocated_res.append(AllocResult(po_id=po.po_id, ssp=po.ssp, allocated_price=alloc))
+        
+        if po.method == 'straight_line' and po.start_date and po.end_date:
+            schedules[po.po_id] = straight_line(alloc, date.fromisoformat(po.start_date), date.fromisoformat(po.end_date))
+        
+        elif po.method == 'point_in_time':
+            if not po.start_date:
+                raise ValueError("start_date is required for point_in_time method")
+            schedules[po.po_id] = point_in_time(alloc, date.fromisoformat(po.start_date))
+            # Keep track of revenue recognized at a point-in-time
+            total_point_in_time_revenue += alloc
+        
+        elif po.method == 'milestone':
+            ms = []
+            for m in getattr(po.params, 'milestones', []):
+                 if hasattr(m, 'model_dump'): ms.append(m.model_dump())
+                 elif hasattr(m, 'dict'): ms.append(m.dict())
+                 else: ms.append(m)
+            schedules[po.po_id]=milestones(alloc, ms)
+
+        elif po.method == 'percent_complete':
+            schedules[po.po_id]=percent_complete(alloc, po.params.percent_schedule)
+            
+        else:
+            schedules[po.po_id] = {}
+
+    # HANDLE RETURNS ADJUSTMENT (STEP 3) 
+    if contract.variable and contract.variable.returns_rate > 0.0:
+        
+        # Calculate the refund liability based on the PoT revenue
+        returns_adj = variable.expected_returns_adjustment(
+            total_point_in_time_revenue,
+            contract.variable.returns_rate
+        )
+        adjustments["returns_adjustment"] = returns_adj
+
+    return AllocationResponse(
+        allocated=allocated_res, 
+        schedules=schedules,
+        adjustments=adjustments
+    )
 
 """
 Recommendations for further enhancements:

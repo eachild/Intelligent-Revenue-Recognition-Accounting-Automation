@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import Optional, List
 
 from . import nlp_rules, ai
-from .schemas import IngestResult, PerformanceObligationIn, Risk, Commission, Recommendation, RevenueSummary, NonRevenueSummary
+from .schemas import IngestResult, ExtractedPO, RiskFinding, Recommendation
 
 def run_contract_parsing(text: str) -> IngestResult:
     """
@@ -12,13 +12,12 @@ def run_contract_parsing(text: str) -> IngestResult:
     standard_reason: Optional[str] = None
     currency: Optional[str] = None
     transaction_price: Optional[float] = None
-    performance_obligations: List[PerformanceObligationIn] = []
-    risks: List[Risk] = []
-    commissions: Optional[Commission] = None
+    performance_obligations: List[ExtractedPO] = []
+    risks: List[RiskFinding] = []
+    commissions: Optional[float] = None
     recommendations: List[Recommendation] = []
-    revenue_summary: Optional[RevenueSummary] = None
-    nonrevenue_summary: Optional[NonRevenueSummary] = None
-
+    revenue_summary: Optional[str] = None
+    nonrevenue_summary: Optional[str] = None
     try:
         standard, standard_reason = nlp_rules.detect_standard(text)
         currency = nlp_rules.find_currency(text)
