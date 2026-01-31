@@ -1,5 +1,4 @@
 # backend/app/routers/disclosure_pack.py
-
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from reportlab.lib import colors
@@ -11,14 +10,16 @@ from datetime import datetime
 import os
 from typing import List, Dict, Any
 import json
-
 from app.schemas import ContractIn, AllocResult
 from app.reporting import summarize_schedules
 from app.engine import build_allocation
 
+# Router for disclosure pack endpoint
 router = APIRouter(prefix="/reports", tags=["disclosure-pack"])
 
+# Class to generate disclosure pack reports
 class DisclosurePackGenerator:
+    # Initialize with output directory
     def __init__(self, output_dir: str = "./out"):
         self.output_dir = output_dir
         os.makedirs(output_dir, exist_ok=True)
@@ -45,7 +46,8 @@ class DisclosurePackGenerator:
             fontSize=10,
             spaceAfter=6
         ))
-
+    
+    # Generate ASC 606 Revenue from Contracts with Customers disclosure
     def generate_asc_606_disclosure(self, story, contracts: List[Dict]):
         """Generate ASC 606 Revenue from Contracts with Customers disclosure"""
         story.append(Paragraph("ASC 606 - Revenue from Contracts with Customers", self.styles['Heading1']))
@@ -70,7 +72,8 @@ class DisclosurePackGenerator:
             story.append(self._create_rpo_table(rpo_data))
         
         story.append(PageBreak())
-
+    
+    # Generate ASC 842 Leases disclosure
     def generate_asc_842_disclosure(self, story, leases: List[Dict]):
         """Generate ASC 842 Leases disclosure"""
         story.append(Paragraph("ASC 842 - Leases", self.styles['Heading1']))
@@ -93,6 +96,7 @@ class DisclosurePackGenerator:
         
         story.append(PageBreak())
 
+    # Generate ASC 740 Income Taxes disclosure
     def generate_asc_740_disclosure(self, story, tax_data: Dict):
         """Generate ASC 740 Income Taxes disclosure"""
         story.append(Paragraph("ASC 740 - Income Taxes", self.styles['Heading1']))
@@ -110,6 +114,7 @@ class DisclosurePackGenerator:
         
         story.append(PageBreak())
 
+    # Generate ASC 718 Stock Compensation disclosure
     def generate_asc_718_disclosure(self, story, compensation_data: Dict):
         """Generate ASC 718 Compensation - Stock Compensation disclosure"""
         story.append(Paragraph("ASC 718 - Stock Compensation", self.styles['Heading1']))
@@ -127,6 +132,7 @@ class DisclosurePackGenerator:
         
         story.append(PageBreak())
 
+    # Create revenue disaggregation table
     def _create_revenue_table(self, data: List[Dict]) -> Table:
         """Create revenue disaggregation table"""
         headers = ['Revenue Category', 'Current Period', 'Prior Period', 'Variance %']
@@ -154,6 +160,7 @@ class DisclosurePackGenerator:
         ]))
         return table
 
+    # Create contract balances table
     def _create_balances_table(self, data: Dict) -> Table:
         """Create contract balances table"""
         headers = ['Balance Type', 'Beginning', 'Additions', 'Recognized', 'Ending']
@@ -182,6 +189,7 @@ class DisclosurePackGenerator:
         ]))
         return table
 
+    # Create remaining performance obligations table
     def _create_rpo_table(self, data: Dict) -> Table:
         """Create remaining performance obligations table"""
         headers = ['Period', 'Amount']
@@ -204,6 +212,7 @@ class DisclosurePackGenerator:
         ]))
         return table
 
+    # Create lease disclosure table
     def _create_lease_table(self, data: List[Dict]) -> Table:
         """Create lease disclosure table"""
         headers = ['Lease Type', 'Right-of-Use Assets', 'Lease Liabilities', 'Lease Term']
@@ -231,6 +240,7 @@ class DisclosurePackGenerator:
         ]))
         return table
 
+    # Create lease expense table
     def _create_tax_table(self, data: Dict) -> Table:
         """Create deferred taxes table"""
         headers = ['Temporary Difference', 'Deferred Tax Asset', 'Deferred Tax Liability']
@@ -257,6 +267,7 @@ class DisclosurePackGenerator:
         ]))
         return table
 
+    # Create stock option activity table
     def _create_stock_option_table(self, data: List[Dict]) -> Table:
         """Create stock option activity table"""
         headers = ['', 'Number of Options', 'Weighted Average Exercise Price']
@@ -283,6 +294,7 @@ class DisclosurePackGenerator:
         ]))
         return table
 
+    # Create compensation expense table
     def _aggregate_revenue_by_category(self, contracts: List[Dict]) -> List[Dict]:
         """Aggregate revenue by category for disclosure"""
         # This would integrate with your existing revenue aggregation logic
@@ -314,6 +326,7 @@ class DisclosurePackGenerator:
         
         return result
 
+    # Categorize performance obligation
     def _categorize_po(self, description: str) -> str:
         """Categorize performance obligation based on description"""
         desc_lower = description.lower()
@@ -326,6 +339,7 @@ class DisclosurePackGenerator:
         else:
             return 'Service Revenue'
 
+    # Calculate contract balances
     def _calculate_contract_balances(self, contracts: List[Dict]) -> Dict:
         """Calculate contract balances for disclosure"""
         # Placeholder implementation - integrate with your balance calculation logic
@@ -344,6 +358,7 @@ class DisclosurePackGenerator:
             }
         }
 
+    # Calculate remaining performance obligations
     def _calculate_rpo(self, contracts: List[Dict]) -> Dict:
         """Calculate remaining performance obligations"""
         # Placeholder implementation
@@ -354,6 +369,7 @@ class DisclosurePackGenerator:
             'Beyond 36 months': 15000
         }
 
+    # Aggregate lease data
     def _aggregate_lease_data(self, leases: List[Dict]) -> List[Dict]:
         """Aggregate lease data for disclosure"""
         # Placeholder implementation
@@ -362,6 +378,7 @@ class DisclosurePackGenerator:
             {'type': 'Finance Leases', 'assets': 150000, 'liabilities': 148000, 'term': 48}
         ]
 
+    # Calculate lease expense
     def _calculate_lease_expense(self, leases: List[Dict]) -> List[Dict]:
         """Calculate lease expense for disclosure"""
         # Placeholder implementation
@@ -372,6 +389,7 @@ class DisclosurePackGenerator:
             {'expense_type': 'Variable Lease Payments', 'amount': 8000}
         ]
 
+    # Calculate lease expense table
     def generate_disclosure_pack(self, 
                                contracts: List[Dict] = None,
                                leases: List[Dict] = None,
@@ -466,7 +484,3 @@ async def generate_disclosure_pack(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating disclosure pack: {str(e)}")
-
-# Register the router in your main.py
-# from app.routers.disclosure_pack import router as disclosure_pack_router
-# app.include_router(disclosure_pack_router)

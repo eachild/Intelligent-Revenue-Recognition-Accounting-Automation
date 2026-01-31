@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 from dataclasses import dataclass
 from ..llm.gateway import LLMGateway
 
+# Data class for temporary differences
 @dataclass
 class TempDiff:
     """Temporary difference for a future period (positive => taxable in future)."""
@@ -11,6 +12,7 @@ class TempDiff:
     amount: float   # book basis - tax basis (temporary)
     reversal_year: int  # for disclosure buckets
 
+# Function to compute deferred tax
 def compute_deferred_tax(
     differences: List[TempDiff],
     statutory_rate: float,
@@ -48,6 +50,7 @@ def compute_deferred_tax(
         ]
     }
 
+# Function to generate AI tax memo
 def ai_tax_memo(company: str, results: Dict) -> str:
     """
     Lightweight 'AI' narrative using your LLM gateway (mock-supported).
