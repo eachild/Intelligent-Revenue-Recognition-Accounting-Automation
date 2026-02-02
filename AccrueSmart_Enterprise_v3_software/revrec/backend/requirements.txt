@@ -7,3 +7,6 @@ pandas
 numpy
 reportlab
 pdfminer.six
+sqlmodel>=0.0.14 # Added for database models and interactions
+openai>=1.0.0  # Optional - for OpenAI integration
+anthropic>=0.7.0  # Optional - for Anthropic integration
