@@ -7,7 +7,7 @@ app.include_router(tax.router)  # add after other routers
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List
-from ..auth import require
+from app.auth import require
 from ..services.asc740 import TempDiff, compute_deferred_tax, ai_tax_memo
 
 # Router for tax-related endpoints

@@ -1,3 +1,4 @@
+
 # backend/app/db.py
 from contextlib import contextmanager
 from typing import Generator
@@ -29,3 +30,5 @@ def get_session() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
+
+

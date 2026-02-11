@@ -1,6 +1,6 @@
 # backend/app/routers/leases.py
 from fastapi import APIRouter, Request, HTTPException
-from ..auth import require
+from app.auth import require
 from ..services.leases import compute_schedule, export_lease_journals_csv
 
 # Router for lease-related endpoints

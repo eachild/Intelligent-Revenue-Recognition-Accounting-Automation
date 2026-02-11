@@ -1,3 +1,4 @@
+
 # backend/app/llm/gateway.py
 from __future__ import annotations
 import os
@@ -177,3 +178,4 @@ Format as a professional audit memo.
         """Get current date in YYYY-MM-DD format"""
         from datetime import date
         return date.today().isoformat()
+
