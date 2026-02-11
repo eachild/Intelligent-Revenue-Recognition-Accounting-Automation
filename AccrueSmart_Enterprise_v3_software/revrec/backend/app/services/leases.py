@@ -7,11 +7,14 @@ import math
 import csv
 import io
 
+# Frequency type for lease payments
 Freq = Literal["monthly", "quarterly", "annual"]
 
+# Helper functions for date and period calculations
 def _months_between(start: date, end: date) -> int:
     return (end.year - start.year) * 12 + (end.month - start.month) + (0 if end.day < start.day else 0)
 
+# Function to add months to a date
 def _add_months(d: date, n: int) -> date:
     y = d.year + (d.month - 1 + n) // 12
     m = (d.month - 1 + n) % 12 + 1
@@ -23,6 +26,7 @@ def _add_months(d: date, n: int) -> date:
             last_day = day
     return date(y, m, last_day)
 
+# Function to calculate number of periods between two dates based on frequency
 def _periods(start: date, end: date, freq: Freq) -> int:
     months = _months_between(start, end) + 1  # inclusive-like
     if freq == "monthly":
@@ -31,6 +35,7 @@ def _periods(start: date, end: date, freq: Freq) -> int:
         return math.ceil(months / 3)
     return math.ceil(months / 12)
 
+# Function to get the date of the i-th period based on frequency
 def _period_date_idx(start: date, i: int, freq: Freq) -> date:
     if freq == "monthly":
         return _add_months(start, i)
@@ -38,6 +43,7 @@ def _period_date_idx(start: date, i: int, freq: Freq) -> date:
         return _add_months(start, i * 3)
     return _add_months(start, i * 12)
 
+# Data class for lease inputs
 @dataclass
 class LeaseInputs:
     lease_id: str
@@ -51,6 +57,7 @@ class LeaseInputs:
     cpi_escalation_pct: float = 0.0  # optional: % increase per year
     cpi_escalation_month: int = 12   # apply every X months (default annually)
 
+# Function to calculate periodic discount rate
 def _period_rate(dr_annual: float, freq: Freq) -> float:
     if freq == "monthly":
         return dr_annual / 12.0
@@ -58,6 +65,7 @@ def _period_rate(dr_annual: float, freq: Freq) -> float:
         return dr_annual / 4.0
     return dr_annual
 
+# Function to calculate payment amount for a given period with CPI escalation
 def _payment_for_period(base_payment: float, i: int, freq: Freq, cpi_pct: float, interval: int) -> float:
     if cpi_pct <= 0:
         return base_payment
@@ -70,6 +78,7 @@ def _payment_for_period(base_payment: float, i: int, freq: Freq, cpi_pct: float,
         bumps = (i * 12) // interval
     return base_payment * ((1.0 + cpi_pct) ** bumps)
 
+# Function to compute lease schedule
 def compute_schedule(
     lease_id: str,
     start_date: str,
@@ -103,16 +112,15 @@ def compute_schedule(
     for i in range(n):
         amt = _payment_for_period(payment, i, frequency, cpi_escalation_pct, cpi_escalation_month)
         pv += amt / ((1 + r) ** (i + 1))
-
     opening_liability = round(pv, 2)
     opening_rou_asset = round(pv + idc - incentives, 2)
-
     rows: List[Dict] = []
     liability = opening_liability
     rou = opening_rou_asset
     total_interest = 0.0
     total_payments = 0.0
 
+    # Build schedule rows
     for i in range(n):
         dt = _period_date_idx(sd, i, frequency)
         pmt = _payment_for_period(payment, i, frequency, cpi_escalation_pct, cpi_escalation_month)
@@ -124,6 +132,7 @@ def compute_schedule(
         rou_amort = opening_rou_asset / n
         rou = max(0.0, rou - rou_amort)
 
+        # Append row data for the current period
         rows.append({
             "period": i + 1,
             "date": dt.isoformat(),
@@ -136,7 +145,8 @@ def compute_schedule(
         })
         total_interest += interest
         total_payments += pmt
-
+    
+    # Return the complete schedule dictionary
     return {
         "lease_id": lease_id,
         "rows": rows,
@@ -146,6 +156,7 @@ def compute_schedule(
         "opening_rou_asset": opening_rou_asset,
     }
 
+# Function to build lease journals from schedule
 def journals_from_schedule(lease_id: str, sched: Dict) -> List[Dict]:
     """
     Build period journals:
@@ -155,6 +166,8 @@ def journals_from_schedule(lease_id: str, sched: Dict) -> List[Dict]:
       Cr Lease Liability (principal component)
     """
     j = []
+
+    # Iterate over schedule rows to create journal entries
     for r in sched["rows"]:
         j.append({
             "lease_id": lease_id,
@@ -182,6 +195,7 @@ def journals_from_schedule(lease_id: str, sched: Dict) -> List[Dict]:
         })
     return j
 
+# Function to export lease journals as CSV
 def export_lease_journals_csv(payload: Dict) -> str:
     """
     payload = {

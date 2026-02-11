@@ -3,8 +3,10 @@ from fastapi import APIRouter, Request, HTTPException
 from ..auth import require
 from ..services.leases import compute_schedule, export_lease_journals_csv
 
+# Router for lease-related endpoints
 router = APIRouter(prefix="/leases", tags=["leases"])
 
+# Endpoint to compute lease schedule
 @router.post("/schedule")
 @require(perms=["leases.edit"])
 async def schedule(request: Request):
@@ -16,6 +18,7 @@ async def schedule(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+# Endpoint to export lease journals as CSV
 @router.post("/export/journals")
 @require(perms=["leases.export"])
 async def export_journals(request: Request):

@@ -7,32 +7,27 @@ from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, 
 from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable
 from .ledger import CSVLedger
 
-# From routers/tax.py and services/asc_740.py
-from .routers import tax
-app.include_router(tax.router)  # add after other routers
-
-# From forecast.py
-from .routers import forecast
-app.include_router(forecast.router)
-
-# From auditor.py
-from .routers import auditor
-app.include_router(auditor.router)
-
-# From disclosure_pack.py
-from app.routers.disclosure_pack import router as disclosure_pack_router
-app.include_router(disclosure_pack_router)
-
-# From costs.py
-from .routers import costs
-app.include_router(costs.router)
-
-# From locks.py
-from .routers import locks
-app.include_router(locks.router)
-
+# Create the app first
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart RevRec Superset', version='3.0')
+
+# Then import and include routers (after app creation to avoid circular imports)
+from .routers import tax, forecast, auditor, costs, locks
+from .routers.disclosure_pack import router as disclosure_pack_router
+from .routers import audit
+
+# Include all routers
+app.include_router(tax.router)
+app.include_router(forecast.router)
+app.include_router(auditor.router)
+app.include_router(disclosure_pack_router)
+app.include_router(costs.router)
+app.include_router(locks.router)
+app.include_router(audit.router)
+
+# Health check endpoint
+@app.get('/health')
+def health(): return {'ok':True}
 
 # # build_allocation: expanded to support milestone and percent_complete and to use PO params
 # def build_allocation(contract: ContractIn) -> AllocationResponse:
@@ -142,9 +137,6 @@ def build_allocation(contract: ContractIn) -> AllocationResponse:
         schedules=schedules,
         adjustments=adjustments
     )
-
-@app.get('/health')
-def health(): return {'ok':True}
 
 @app.post('/contracts/allocate', response_model=AllocationResponse)
 def allocate(c: ContractIn): return build_allocation(c)

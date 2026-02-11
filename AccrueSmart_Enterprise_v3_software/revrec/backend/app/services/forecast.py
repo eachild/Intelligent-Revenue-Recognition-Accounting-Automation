@@ -5,14 +5,17 @@ from typing import Dict, List, Literal, Tuple
 import pandas as pd
 import numpy as np
 
+# Type alias for forecasting methods
 Method = Literal["exp_smooth", "seasonal_ma"]
 
+# Helper to convert history dict to pandas Series
 def _to_series(history: Dict[str, float]) -> pd.Series:
     s = pd.Series(history, dtype=float)
     s.index = pd.to_datetime(s.index)  # keys like "2024-01"
     s = s.sort_index()
     return s
 
+# Exponential smoothing forecast
 def exp_smoothing_forecast(history: Dict[str, float], horizon: int, alpha: float = 0.35) -> Dict:
     """
     Simple single-parameter exponential smoothing.
@@ -42,6 +45,7 @@ def exp_smoothing_forecast(history: Dict[str, float], horizon: int, alpha: float
         "forecast": {d.strftime("%Y-%m"): float(v) for d, v in fc.items()},
     }
 
+# Seasonal moving average forecast
 def seasonal_moving_average(history: Dict[str, float], horizon: int, season: int = 12) -> Dict:
     """
     Seasonal moving average: average by month-of-year (or period-of-season).
@@ -82,6 +86,7 @@ def seasonal_moving_average(history: Dict[str, float], horizon: int, season: int
         "forecast": {d.strftime("%Y-%m"): float(v) for d, v in fc.items()},
     }
 
+# Main dispatch function for forecasting
 def forecast_revenue(
     history: Dict[str, float],
     horizon: int = 12,

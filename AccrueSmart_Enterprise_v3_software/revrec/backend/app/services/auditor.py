@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Dict, Any
 from ..llm.gateway import LLMGateway
 
+# Function to summarize audit findings
 def summarize_audit(findings: Dict[str, Any]) -> Dict[str, Any]:
     """
     Aggregate schedules and generate narrative commentary via LLM.
