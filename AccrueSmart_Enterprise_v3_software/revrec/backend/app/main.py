@@ -12,9 +12,13 @@ OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart RevRec Superset', version='3.0')
 
 # Then import and include routers (after app creation to avoid circular imports)
-from .routers import tax, forecast, auditor, costs, locks
+from .routers import tax, forecast, auditor, costs, locks, leases, codes
 from .routers.disclosure_pack import router as disclosure_pack_router
 from .routers import audit
+from .db import init_db
+
+# Initialize DB tables at startup
+init_db()
 
 # Include all routers
 app.include_router(tax.router)
@@ -24,6 +28,8 @@ app.include_router(disclosure_pack_router)
 app.include_router(costs.router)
 app.include_router(locks.router)
 app.include_router(audit.router)
+app.include_router(leases.router)
+app.include_router(codes.router)
 
 # Health check endpoint
 @app.get('/health')
