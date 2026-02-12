@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
-from ..authz import require
+from ..auth import require
 from ..auth import build_principal  # gives sub/email from Supabase JWT
 from ..services.locks import save_lock, get_lock_status
 

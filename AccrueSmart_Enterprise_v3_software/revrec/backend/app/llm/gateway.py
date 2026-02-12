@@ -53,7 +53,6 @@ REVENUE RECOGNITION ASSESSMENT:
 - Transaction price allocation follows relative SSP methodology
 
 """
-        
         if "stats" in payload:
             stats = payload["stats"]
             memo += f"""
@@ -61,7 +60,6 @@ JOURNAL ENTRY STATISTICS:
 - Total Journals: {stats.get('total_journals', 0)}
 - Posted: {stats.get('posted_journals', 0)}
 - Pending: {stats.get('unposted_journals', 0)}
-
 """
         
         if "anomalies" in payload:

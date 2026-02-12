@@ -1,9 +1,3 @@
-"""
-# backend/app/routers/auditor.py
-Add this line to main.py:
-from .routers import auditor
-app.include_router(auditor.router)
-"""
 from fastapi import APIRouter, Request
 from ..auth import require
 from ..services.auditor import summarize_audit

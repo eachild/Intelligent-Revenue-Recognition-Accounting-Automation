@@ -1,9 +1,3 @@
-"""
-backend/app/routers/tax.py
-Wire it up in backend/app/main.py:
-from .routers import tax  # add import
-app.include_router(tax.router)  # add after other routers
-"""
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 from typing import List
