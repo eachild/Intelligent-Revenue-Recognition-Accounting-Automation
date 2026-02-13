@@ -10,9 +10,9 @@ from datetime import datetime
 import os
 from typing import List, Dict, Any
 import json
-from app.schemas import ContractIn, AllocResult
-# from app.reporting import summarize_schedules
-from app.engine import build_allocation
+from ..schemas import ContractIn, AllocResult
+# from ..reporting import summarize_schedules
+from ..engine import build_allocation
 
 # Router for disclosure pack endpoint
 router = APIRouter(prefix="/reports", tags=["disclosure-pack"])
@@ -445,7 +445,7 @@ async def generate_disclosure_pack(
         generator = DisclosurePackGenerator()
         
         # Get contracts from repository
-        from app.repository import get_many
+        from ..repository import get_many
         contracts = get_many(contract_ids) if contract_ids else []
         
         # Get additional data (placeholders - integrate with your services)
@@ -455,17 +455,17 @@ async def generate_disclosure_pack(
         
         if include_leases:
             # Integrate with your leases service
-            from app.services.leases import get_lease_data
+            from ..services.leases import get_lease_data
             leases = get_lease_data()  # Implement this in your leases service
         
         if include_taxes:
             # Integrate with your tax service
-            from app.services.asc740 import get_tax_disclosure_data
+            from ..services.asc740 import get_tax_disclosure_data
             tax_data = get_tax_disclosure_data()  # Implement this in your tax service
         
         if include_compensation:
             # Integrate with your compensation service
-            from app.services.asc718 import get_compensation_data
+            from ..services.asc718 import get_compensation_data
             compensation_data = get_compensation_data()  # Implement this if you have ASC 718 service
         
         # Generate PDF

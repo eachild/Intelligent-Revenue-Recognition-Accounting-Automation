@@ -4,7 +4,7 @@ from datetime import date
 from typing import List, Optional, Literal, Dict, Any, Annotated
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field, confloat
-from app.auth import require  # uses your decorator-based enforcement
+from ..auth import require
 from ..services.costs import amortize_cost
 
 router = APIRouter(prefix="/costs", tags=["costs"])

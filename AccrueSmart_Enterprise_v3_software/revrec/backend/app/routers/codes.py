@@ -3,7 +3,7 @@ backend/app/routers/codes.py
 CRUD for product codes, revrec codes, and mapping.
 """
 from fastapi import APIRouter, HTTPException, Request
-from app.auth import require
+from ..auth import require
 from ..services.codes_crud import (
     list_products as db_list_products,
     create_product as db_create_product,
