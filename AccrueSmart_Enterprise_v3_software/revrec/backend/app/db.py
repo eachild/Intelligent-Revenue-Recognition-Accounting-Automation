@@ -1,9 +1,9 @@
-
 # backend/app/db.py
 from contextlib import contextmanager
 from typing import Generator
 import os
 from sqlmodel import Session, create_engine, SQLModel
+from .services.locks import init_models as init_lock_models
 
 # Database URL from environment or default to SQLite for development
 DATABASE_URL = os.getenv(
@@ -19,8 +19,12 @@ engine = create_engine(
 )
 
 def init_db():
-    """Initialize database tables"""
     SQLModel.metadata.create_all(engine)
+    try:
+        init_lock_models()
+    except Exception:
+        # safe no-op if already initialized
+        pass
 
 @contextmanager
 def get_session() -> Generator[Session, None, None]:
@@ -30,5 +34,3 @@ def get_session() -> Generator[Session, None, None]:
         yield session
     finally:
         session.close()
-
-
