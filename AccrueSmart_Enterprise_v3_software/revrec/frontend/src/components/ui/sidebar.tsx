@@ -26,7 +26,7 @@ const items: NavItem[] = [
   { href: "/contracts", label: "Contracts", icon: FileText },
   { href: "/viewer", label: "PDF Viewer", icon: ScanText },
   { href: "/negotiation", label: "Deal Desk AI", icon: Bot },
-  { href: "/revrec-codes", label: "RevRec Codes", icon: Shapes },
+  { href: "/revrec_codes", label: "RevRec Codes", icon: Shapes },
   { href: "/catalog", label: "Product Catalog", icon: Package },
   { href: "/schedules/editor", label: "Schedules (Grid)", icon: Table },
   { href: "/reports", label: "Reports", icon: FileChartColumn },
