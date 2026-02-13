@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/src/lib/api";
+import { api, API_BASE } from "@/src/lib/api";
 import { Input } from "@/src/components/ui/input";
 import { Button } from "@/src/components/ui/button";
 import { Card } from "@/src/components/ui/card";
@@ -15,13 +15,13 @@ export default function ScheduleEditorPage(){
   async function load(){ setRows(await api(`/schedules/grid/${encodeURIComponent(cid)}`)); }
   async function save(){ await api(`/schedules/grid/${encodeURIComponent(cid)}`,{method:"POST", body:JSON.stringify({rows})}); await load(); }
   async function exportCsv(){
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/schedules/grid/${encodeURIComponent(cid)}/export/csv`;
+    const url = `${API_BASE}/schedules/grid/${encodeURIComponent(cid)}/export/csv`;
     window.open(url, "_blank");
   }
   async function importCsv(){
     if(!file) return;
     const fd = new FormData(); fd.append("file", file);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/schedules/grid/${encodeURIComponent(cid)}/import/csv`, { method:"POST", body:fd });
+    const res = await fetch(`${API_BASE}/schedules/grid/${encodeURIComponent(cid)}/import/csv`, { method:"POST", body:fd });
     if(!res.ok) alert("Import failed");
     await load();
   }
