@@ -81,6 +81,21 @@ left join product_revrec_map m on m.product_id = p.id
 left join revrec_codes r       on r.id = m.revrec_id;
 
 
+-- === ASC 340-40 COSTS ========================================
+
+create table if not exists contract_costs (
+  id uuid primary key default gen_random_uuid(),
+  contract_id text not null,
+  label text,
+  amount numeric not null,
+  start_date date not null,
+  months int not null check (months > 0),
+  method text not null default 'straight_line', -- 'straight_line' | 'percent_complete' | 'custom_curve'
+  curve numeric[] default null,
+  created_at timestamptz default now()
+);
+
+
 -- === SCHEDULE LOCK ===========================================
 
 create table if not exists schedulelock (
@@ -145,4 +160,12 @@ where  r.code in ('finance','deal_desk')
     'product.manage','revrec.manage',
     'schedules.edit','schedules.import','schedules.export'
   )
+on conflict do nothing;
+
+-- Grant admin + finance the costs & lock powers (from master)
+insert into role_permissions (role_id, permission_id)
+select r.id, p.id
+from roles r, permissions p
+where r.code in ('admin','finance')
+  and p.code in ('costs.run','schedules.approve')
 on conflict do nothing;
