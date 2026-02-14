@@ -7,11 +7,18 @@ from ..llm.gateway import LLMGateway
 # Data class for temporary differences
 @dataclass
 class TempDiff:
-    """Temporary difference for a future period (positive => taxable in future)."""
+    """
+    Represents a temporary difference between book and tax basis
+    that will reverse in a future period.
+
+    amount = book basis - tax basis
+      > positive  => taxable in the future 
+    """
     period: str     # e.g., "2026-12"
     amount: float   # book basis - tax basis (temporary)
     reversal_year: int  # for disclosure buckets
 
+# Core ASC 740 calculation
 # Function to compute deferred tax
 def compute_deferred_tax(
     differences: List[TempDiff],
@@ -19,21 +26,36 @@ def compute_deferred_tax(
     valuation_allowance_pct: float = 0.0
 ) -> Dict:
     """
-    Returns DTA/DTL rollforward and period mapping.
-    Positive temp difference -> DTL (future taxable)
-    Negative temp difference -> DTA (future deductible)
+    Computes deferred tax assets (DTA), deferred tax liabilities (DTL),
+    and supporting rollforward/disclosure data under ASC 740.
+
+    Rules:
+    - Positive temporary differences create DTLs (future taxable)
+    - Negative temporary differences create DTAs (future deductible)
     """
+
+    # Calculate gross deferred tax liabilities (DTL)
+    # Only positive temp differences contribute
     dtl = sum(max(0.0, d.amount) * statutory_rate for d in differences)
+
+    # Calculate gross deferred tax assets (DTA)
+    # Only negative temp differences contribute (absolute value)
     dta = sum(max(0.0, -d.amount) * statutory_rate for d in differences)
 
+    # Store rounded gross balances
     gross = {"DTL": round(dtl, 2), "DTA": round(dta, 2)}
+
+    # Valuation allowance applies only to DTAs
+    # Net deferred tax position (DTA - valuation allowance - DTL)
     va = round(dta * valuation_allowance_pct, 2)
     net = round(dta - va - dtl, 2)
 
+    # Aggregate temporary differences by reversal year
     by_year: Dict[int, float] = {}
     for d in differences:
         by_year[d.reversal_year] = round(by_year.get(d.reversal_year, 0.0) + d.amount, 2)
 
+    # Final structured output for reporting and memo generation
     return {
         "statutory_rate": statutory_rate,
         "gross": gross,

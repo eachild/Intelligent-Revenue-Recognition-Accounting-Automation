@@ -7,6 +7,11 @@ from datetime import date
 from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, ConsolidationIn, PerformanceObligationIn
 from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable
 from .ledger import CSVLedger
+from .routers import tax  # add import
+#app.include_router(tax.router)
+from .routers import forecast   # add import
+#app.include_router(forecast.router)
+
 
 # Create the app first
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
