@@ -8,7 +8,7 @@
 
 create table if not exists roles (
   id uuid primary key default gen_random_uuid(),
-  code text unique not null,          -- e.g. "finance", "deal_desk", "auditor"
+  code text unique not null,          -- e.g. "finance", "deal_desk", "auditor", "admin"
   label text not null default '',
   created_at timestamptz default now()
 );
@@ -27,7 +27,9 @@ create table if not exists role_permissions (
 );
 
 -- Seed a few default roles
+-- SAFE ADD: includes 'admin' because later grants reference it
 insert into roles (code, label) values
+  ('admin',     'System admin'),
   ('finance',   'Finance team'),
   ('deal_desk', 'Deal-desk / sales ops'),
   ('auditor',   'External / internal auditor')
@@ -97,7 +99,7 @@ create table if not exists contract_costs (
 
 
 -- === SCHEDULE LOCK ===========================================
-
+-- KEEPING your existing table name (schedulelock) so nothing breaks.
 create table if not exists schedulelock (
   id serial primary key,
   contract_id text not null,
@@ -109,6 +111,20 @@ create table if not exists schedulelock (
 );
 create index if not exists ix_schedulelock_contract
   on schedulelock (contract_id);
+
+-- SAFE ADD: also create the spec-aligned table name schedule_locks.
+-- This does NOT break anything; it just ensures Task 6 matches expected naming too.
+create table if not exists schedule_locks (
+  id bigserial primary key,
+  contract_id text not null,
+  schedule_hash text not null,
+  approver_sub text not null,
+  approver_email text,
+  note text,
+  locked_at timestamptz default now()
+);
+create index if not exists idx_schedule_locks_contract
+  on schedule_locks (contract_id);
 
 
 -- === SCHEDULES (persisted output from the engine) ============
@@ -163,6 +179,7 @@ where  r.code in ('finance','deal_desk')
 on conflict do nothing;
 
 -- Grant admin + finance the costs & lock powers (from master)
+-- SAFE now because admin role exists above
 insert into role_permissions (role_id, permission_id)
 select r.id, p.id
 from roles r, permissions p

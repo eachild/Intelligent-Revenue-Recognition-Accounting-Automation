@@ -29,9 +29,22 @@ engine = create_engine(
 
 def init_db():
     """Create tables that are defined as SQLModel classes.
+
     For Supabase the canonical schema lives in ops/supabase_schema.sql;
     this call is a no-op for tables already created there, but still
-    ensures any SQLModel-only tables (e.g. ScheduleLock) exist."""
+    ensures any SQLModel-only tables (e.g. ScheduleLock) exist.
+
+    NOTE: We use a lazy import here to avoid circular imports:
+      services/locks.py imports db (engine/get_session),
+      so db.py must NOT import locks.py at module import time.
+    """
+    # Lazy import to register ScheduleLock model in SQLModel.metadata
+    # (safe even if it fails; create_all will still create other models)
+    try:
+        from .services.locks import ScheduleLock  # noqa: F401
+    except Exception:
+        pass
+
     SQLModel.metadata.create_all(engine)
 
 
