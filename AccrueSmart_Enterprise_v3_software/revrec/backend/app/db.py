@@ -3,7 +3,6 @@ from contextlib import contextmanager
 from typing import Generator
 import os
 from sqlmodel import Session, create_engine, SQLModel
-from .services.locks import init_models as init_lock_models
 
 # ---------------------------------------------------------------------------
 # Supabase / PostgreSQL connection
