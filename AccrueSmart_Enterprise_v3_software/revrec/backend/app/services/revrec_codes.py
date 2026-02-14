@@ -4,8 +4,8 @@ Rule engines that produce schedules for a line item. Reuse your month key "YYYY-
 """
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Dict, Any, List
-from datetime import date, timedelta
+from typing import Dict, Any
+from datetime import date
 
 def _to_ym(dt: date) -> str:
     return f"{dt.year:04d}-{dt.month:02d}"

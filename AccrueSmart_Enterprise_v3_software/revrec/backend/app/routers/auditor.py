@@ -5,7 +5,7 @@ from .routers import auditor
 app.include_router(auditor.router)
 """
 from fastapi import APIRouter, Request
-from app.auth import require
+from ..auth import require
 from ..services.auditor import summarize_audit
 
 # Router for auditor-related endpoints
