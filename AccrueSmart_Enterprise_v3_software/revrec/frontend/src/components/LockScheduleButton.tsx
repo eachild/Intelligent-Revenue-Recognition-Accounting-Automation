@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { Button } from "@/src/components/ui/button";
-import { toast } from "@/src/components/ui/toast";
+import { toast } from "sonner";
 import { api } from "@/src/lib/api";
 
 type Props = {
@@ -23,9 +23,9 @@ export default function LockScheduleButton({ contractId, schedule, note, classNa
         body: JSON.stringify({ contract_id: contractId, schedule, note }),
       });
       setLocked(res.lock);
-      toast({ title: "Schedule locked", description: `Hash: ${res.lock.hash.slice(0, 10)}…` });
+      toast.success(`Schedule locked — Hash: ${res.lock.hash.slice(0, 10)}…`);
     } catch (e: any) {
-      toast({ title: "Lock failed", description: e?.message || "Unknown error" });
+      toast.error("Lock failed: " + (e?.message || "Unknown error"));
     } finally {
       setLoading(false);
     }

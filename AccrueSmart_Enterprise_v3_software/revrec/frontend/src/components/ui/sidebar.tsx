@@ -12,6 +12,7 @@ import {
   Table,
   FileChartColumn,
   FileSpreadsheet,
+  TrendingDown,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +30,7 @@ const items: NavItem[] = [
   { href: "/revrec_codes", label: "RevRec Codes", icon: Shapes },
   { href: "/catalog", label: "Product Catalog", icon: Package },
   { href: "/schedules/editor", label: "Schedules (Grid)", icon: Table },
+  { href: "/costs", label: "Costs (ASC 340-40)", icon: TrendingDown },
   { href: "/reports", label: "Reports", icon: FileChartColumn },
   { href: "/leases", label: "Leases", icon: FileSpreadsheet },
 ];
