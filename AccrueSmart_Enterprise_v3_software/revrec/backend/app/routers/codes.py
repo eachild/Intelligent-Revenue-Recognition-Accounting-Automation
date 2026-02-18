@@ -2,8 +2,8 @@
 backend/app/routers/codes.py
 CRUD for product codes, revrec codes, and mapping.
 """
-from fastapi import APIRouter, HTTPException, Request
-from app.auth import require
+from fastapi import APIRouter, Body, HTTPException, Request
+from ..auth import require
 from ..services.codes_crud import (
     list_products as db_list_products,
     create_product as db_create_product,
@@ -47,14 +47,12 @@ async def get_revrec_codes():
 
 @router.post("/revrec")
 @require(perms=["revrec.manage"])
-async def create_revrec(payload: dict):
-    code = payload.get("code")
-    rule_type = payload.get("rule_type")
-    params = payload.get("params", {})
+async def create_revrec(code: str, rule_type: str, payload: dict = Body(default={})):
+    """Frontend sends code & rule_type as query params, params JSON as body."""
     if not code or not rule_type:
         raise HTTPException(400, "code and rule_type required")
     try:
-        return db_create_revrec_code(code, rule_type, params)
+        return db_create_revrec_code(code, rule_type, payload)
     except ValueError as e:
         raise HTTPException(409, str(e))
     except Exception as e:
@@ -64,9 +62,8 @@ async def create_revrec(payload: dict):
 # ----- Mapping -----
 @router.post("/map")
 @require(perms=["revrec.manage"])
-async def map_product_revrec(payload: dict):
-    product_code = payload.get("product_code")
-    revrec_code = payload.get("revrec_code")
+async def map_product_revrec(product_code: str, revrec_code: str):
+    """Frontend sends product_code & revrec_code as query params."""
     if not product_code or not revrec_code:
         raise HTTPException(400, "product_code and revrec_code required")
     try:

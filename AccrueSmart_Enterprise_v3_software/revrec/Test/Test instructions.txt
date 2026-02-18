@@ -1,21 +1,147 @@
-curl http://localhost:8011/health
+**Test (Backend + Frontend)**
+
+Step 1: Start Both Servers
+Open two terminals, both from the project root.
+
+Terminal 1 — Backend (port 8050):
 
 
-# Simulates file upload (POST ingest/pdf)
-curl -X POST http://localhost:8011/ingest/pdf -F "file=@sample_path\sample_contract.pdf"                                    [Works]
+cd AccrueSmart_Enterprise_v3_software/revrec/backend
+pip install -r requirements.txt
+uvicorn app.main:app --port 8050 --reload
+Terminal 2 — Frontend (port 3060):
 
-# Raw file entry (POST ingest/text)
-curl -X POST http://localhost:8011/ingest/text -H "Content-Type: application/json" -d @sample_path\sample_data.json         [Works]
 
-# Allocation (POST contracts/allocate)
-curl -X POST http://localhost:8011/contracts/allocate -H "Content-Type: application/json" -d @allocate_payload.json         [Works]
+cd AccrueSmart_Enterprise_v3_software/revrec/frontend
+npm run dev
+Then open http://localhost:3060 in your browser. You should see the sidebar on the left.
 
-# Chat (POST /chat)
-curl -X POST http://localhost:8011/chat -H "Content-Type: text/plain" -d "how do I summarize a contract?"                   [Works]
+Step 2: Test Product Catalog (/catalog)
+What it does: Manages the list of products/SKUs your company sells.
 
-# Report Generation (POST /reports/disclosure_pack)
-curl -X POST http://localhost:8011/reports/disclosure_pack -H "Content-Type: application/json" -d @payload.json	            [Works]
+Click "Product Catalog" in the sidebar
+Fill in:
+Code: SKU-001
+Name: SaaS Platform
+Description: 12-month subscription
+Click "Add Product"
+You should see a new row appear in the table below
+Add another: Code SKU-002, Name Implementation, Description Setup services
+Step 3: Test RevRec Codes (/revrec_codes)
+What it does: Defines how revenue gets recognized for different types of products.
 
-# File Download (GET /files/get)
-curl -o my_downloaded_report.pdf "http://localhost:8011/files/get?path=out/Disclosure_Pack.pdf"                             [Works]
-			
+Click "RevRec Codes" in the sidebar
+Fill in:
+Code: 606_SL_12
+Rule type dropdown: straight_line
+Params: {"months":12}
+Click "Add RevRec Code"
+You should see it in the table
+Then test mapping (linking a product to a recognition rule):
+5. In the mapping section:
+
+Product Code: SKU-001
+RevRec Code: 606_SL_12
+Click "Map Product -> RevRec"
+Step 4: Test Contracts (/contracts)
+What it does: Takes a contract and allocates the transaction price across performance obligations, then generates revenue schedules.
+
+Click "Contracts" in the sidebar
+The defaults are pre-filled. Click "Allocate"
+You should see a JSON result at the bottom showing:
+allocated — how the $50K was split across POs
+schedules — month-by-month revenue amounts
+Then test AI Generate:
+4. Paste any text in the "Contract Text" box (e.g., 12-month SaaS agreement starting Jan 2025)
+5. Make sure line items have amounts (they're pre-filled)
+6. Click "AI Generate Schedule"
+7. You should see a success toast — it creates a 12-month straight-line schedule and saves it to the grid
+
+Step 5: Test Schedule Editor (/schedules/editor)
+What it does: A spreadsheet-like editor to view/edit the revenue schedule that was generated.
+
+Click "Schedules (Grid)" in the sidebar
+The contract ID defaults to C-TEST — click "Load"
+If you ran AI Generate in Step 4 with contract ID C-TEST, you'll see the 12 monthly rows
+You can edit any cell (period, amount, product code, revrec code)
+Click "Save" to persist changes
+Click "Export CSV" to download as a spreadsheet
+
+
+Test 2
+
+End-to-End Test: New Contract → AI Schedule → Edit → Export
+Step 1: Create Products (/catalog)
+Add two products:
+
+Code	Name	Description
+SAAS-PRO	Pro SaaS License	Annual cloud subscription
+IMPL-001	Implementation	Onboarding and setup
+Click "Add Product" for each.
+
+Step 2: Create RevRec Codes (/revrec_codes)
+Add two recognition rules:
+
+Code	Rule Type	Params
+SL_12M	straight_line	{"months":12}
+PIT	point_in_time	{}
+Click "Add RevRec Code" for each.
+
+Step 3: Map Products to Rules (/revrec_codes)
+In the mapping section at the bottom:
+
+Product Code: SAAS-PRO, RevRec Code: SL_12M → click "Map Product → RevRec"
+Product Code: IMPL-001, RevRec Code: PIT → click "Map Product → RevRec"
+Step 4: Verify Mappings (/catalog)
+Go back to Product Catalog. You should now see:
+
+Code	Name	RevRec Code	Rule
+IMPL-001	Implementation	PIT	point_in_time
+SAAS-PRO	Pro SaaS License	SL_12M	straight_line
+The RevRec Code and Rule columns should no longer show dashes.
+
+Step 5: Create a Contract & Allocate (/contracts)
+Fill in:
+
+Contract ID: CONTRACT-2025-A
+Customer: Acme Corp
+Transaction Price: 120000
+Default Start: 2025-01-01
+Line items:
+
+Line 1: Product Code SAAS-PRO, Amount 80000
+Line 2: Product Code IMPL-001, Amount 40000
+Click "Allocate" → you should see a JSON result with schedules showing monthly amounts for each PO.
+
+Step 6: AI Generate Schedule (/contracts)
+Paste this into the Contract Text box:
+
+
+12-month SaaS agreement for Acme Corp. Pro license at $80,000 plus
+one-time implementation fee of $40,000. Service begins January 2025.
+Click "AI Generate Schedule" → toast should say "AI schedule saved to grid."
+
+Step 7: View the Generated Schedule (/schedules/editor)
+Change the Contract ID to CONTRACT-2025-A
+Click "Load"
+You should see 12 rows — one per month from 2025-01 to 2025-12
+Each row should have amount ≈ 10,000 (120,000 / 12 months)
+Step 8: Edit & Save
+Change the 2025-01 amount to 15000
+Change the 2025-12 amount to 5000 (to keep the total the same)
+Click "Save"
+Click "Load" again — your edits should persist
+Step 9: Export CSV
+Click "Export CSV" — your browser should download a file called CONTRACT-2025-A_schedule.csv. Open it and verify it has the 12 rows with your edited amounts.
+
+What This Proves
+Step	What It Validates
+1-2	Product & RevRec CRUD (create + list)
+3	Product-to-RevRec mapping (POST /codes/map)
+4	Mapping shows up in catalog (join query works)
+5	Contract allocation engine (SSP-based split)
+6	AI schedule generation → grid save pipeline
+7	Schedule grid load from DB
+8	Schedule grid save (full replace)
+9	CSV export (streaming response)
+This tests the complete flow from product setup through revenue recognition to schedule export.

@@ -13,8 +13,15 @@ node_modules/
 
 # Output
 out/
+.next/
+
+# Auto-generated
+next-env.d.ts
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+AccrueSmart_Enterprise_v3_software/revrec/backend/accrue_smart.db
+
+AccrueSmart_Enterprise_v3_software/demo_asc606.py

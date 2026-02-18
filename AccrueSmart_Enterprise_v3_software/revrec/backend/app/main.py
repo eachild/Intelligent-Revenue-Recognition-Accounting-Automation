@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, Body, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from typing import Dict, List, Optional
 import os
@@ -6,13 +7,27 @@ from datetime import date
 from .schemas import ContractIn, AllocationResponse, AllocResult, IngestResult, ConsolidationIn, PerformanceObligationIn
 from . import engine as rev, ocr, ai, nlp_rules, sfc_effective, consolidation, reporting, variable
 from .ledger import CSVLedger
+from .routers import tax  # add import
+#app.include_router(tax.router)
+from .routers import forecast   # add import
+#app.include_router(forecast.router)
+
 
 # Create the app first
 OUT_DIR='./out'; os.makedirs(OUT_DIR, exist_ok=True)
 app=FastAPI(title='AccrueSmart RevRec Superset', version='3.0')
 
+# CORS — allow frontend dev server
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3060", "http://127.0.0.1:3060"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Then import and include routers (after app creation to avoid circular imports)
-from .routers import tax, forecast, auditor, costs, locks, leases, codes
+from .routers import tax, forecast, auditor, costs, locks, leases, codes, schedules
 from .routers.disclosure_pack import router as disclosure_pack_router
 from .routers import audit
 from .db import init_db
@@ -30,6 +45,7 @@ app.include_router(locks.router)
 app.include_router(audit.router)
 app.include_router(leases.router)
 app.include_router(codes.router)
+app.include_router(schedules.router)
 
 # Health check endpoint
 @app.get('/health')

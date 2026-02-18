@@ -1,17 +1,18 @@
 """
 backend/app/services/codes_crud.py
 CRUD operations for product codes, revrec codes, and their mapping.
-Uses SQLModel / SQLite (same pattern as locks.py).
+Canonical schema lives in ops/supabase_schema.sql (Postgres / Supabase).
+SQLModel definitions here are kept in sync for ORM access.
 """
 from __future__ import annotations
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import uuid
-import json
 
-from sqlmodel import Field, SQLModel, Session, select
+from sqlmodel import Field, SQLModel, Session, select, Column
+from sqlalchemy import JSON
 from sqlalchemy.exc import IntegrityError
-from ..db import engine, get_session
+from ..db import get_session
 
 
 # ── SQLModel tables ──────────────────────────────────────────────
@@ -29,17 +30,15 @@ class RevrecCode(SQLModel, table=True):
     __tablename__ = "revrec_codes"
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     code: str = Field(index=True, unique=True)
-    rule_type: str          # straight_line, point_in_time, usage, milestone, percent_complete
-    params: str = "{}"      # JSON string of rule parameters
+    rule_type: str          # straight_line | point_in_time | usage | milestone | percent_complete
+    params: Dict = Field(default_factory=dict, sa_column=Column(JSON, nullable=False, server_default="{}"))
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class ProductRevrecMap(SQLModel, table=True):
     __tablename__ = "product_revrec_map"
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
-    product_id: str = Field(index=True)
+    product_id: str = Field(primary_key=True)
     revrec_id: str = Field(index=True)
-    mapped_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # ── Product CRUD ─────────────────────────────────────────────────
@@ -92,7 +91,7 @@ def list_revrec_codes() -> List[Dict[str, Any]]:
         rows = s.exec(select(RevrecCode).order_by(RevrecCode.code)).all()
         return [
             {"id": r.id, "code": r.code, "rule_type": r.rule_type,
-             "params": json.loads(r.params)}
+             "params": r.params}
             for r in rows
         ]
 
@@ -100,7 +99,7 @@ def list_revrec_codes() -> List[Dict[str, Any]]:
 def create_revrec_code(code: str, rule_type: str, params: Dict = None) -> Dict[str, Any]:
     with get_session() as s:
         rc = RevrecCode(code=code, rule_type=rule_type,
-                        params=json.dumps(params or {}))
+                        params=params or {})
         s.add(rc)
         try:
             s.commit()
@@ -109,28 +108,26 @@ def create_revrec_code(code: str, rule_type: str, params: Dict = None) -> Dict[s
             raise ValueError(f"RevRec code '{code}' already exists")
         s.refresh(rc)
         return {"id": rc.id, "code": rc.code, "rule_type": rc.rule_type,
-                "params": json.loads(rc.params)}
+                "params": rc.params}
 
 
 # ── Mapping ──────────────────────────────────────────────────────
 
 def map_product_to_revrec(product_code: str, revrec_code: str) -> Dict[str, Any]:
     with get_session() as s:
-        # find product
         product = s.exec(
             select(ProductCode).where(ProductCode.code == product_code)
         ).first()
         if not product:
             raise ValueError(f"Product code '{product_code}' not found")
 
-        # find revrec code
         rc = s.exec(
             select(RevrecCode).where(RevrecCode.code == revrec_code)
         ).first()
         if not rc:
             raise ValueError(f"RevRec code '{revrec_code}' not found")
 
-        # upsert: delete old mapping for this product, then insert new one
+        # upsert: delete old mapping, insert new one
         old = s.exec(
             select(ProductRevrecMap).where(ProductRevrecMap.product_id == product.id)
         ).first()
