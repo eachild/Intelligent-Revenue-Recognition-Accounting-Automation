@@ -1,8 +1,8 @@
 
 'use client';
 import { useState } from "react";
-import { api } from "../../lib/api";
-import { Button, Card, Textarea } from "../../components/ui";
+import { api } from "@/lib/api";
+import { Button, Card, Textarea } from "@/components/ui";
 export default function Ingest(){
   const [text, setText] = useState('Customer receives SaaS and hardware. Price $10,000. Right to return.');
   const [res, setRes] = useState<any>(null);

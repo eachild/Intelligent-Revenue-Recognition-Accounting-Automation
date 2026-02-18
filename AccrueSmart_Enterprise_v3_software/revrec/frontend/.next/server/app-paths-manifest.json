@@ -1,0 +1,10 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
+  "/trust/page": "app/trust/page.js",
+  "/tax/page": "app/tax/page.js",
+  "/revrec/page": "app/revrec/page.js",
+  "/leases/page": "app/leases/page.js",
+  "/ingest/page": "app/ingest/page.js",
+  "/forecast/page": "app/forecast/page.js"
+}

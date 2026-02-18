@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "../../lib/api";
-import { Button, Card, Input } from "../../components/ui";
+import { api } from "@/lib/api";
+import { Button, Card, Textarea } from "@/components/ui";
 type TempDiff = { period: string; amount: number; reversal_year: number };
 
 export default function TaxPage() {
