@@ -13,6 +13,9 @@ import {
   FileChartColumn,
   FileSpreadsheet,
   TrendingDown,
+  Calculator,
+  TrendingUp,
+  ShieldCheck,
   type LucideIcon,
 } from "lucide-react";
 
@@ -33,6 +36,9 @@ const items: NavItem[] = [
   { href: "/costs", label: "Costs (ASC 340-40)", icon: TrendingDown },
   { href: "/reports", label: "Reports", icon: FileChartColumn },
   { href: "/leases", label: "Leases", icon: FileSpreadsheet },
+  { href: "/tax", label: "ASC 740", icon: Calculator },
+  { href: "/forecast", label: "Forecast", icon: TrendingUp },
+  { href: "/auditor", label: "AI Auditor", icon: ShieldCheck },
 ];
 
 export function Sidebar() {
