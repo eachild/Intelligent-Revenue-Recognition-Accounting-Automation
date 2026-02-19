@@ -51,33 +51,6 @@ app.include_router(schedules.router)
 @app.get('/health')
 def health(): return {'ok':True}
 
-# # build_allocation: expanded to support milestone and percent_complete and to use PO params
-# def build_allocation(contract: ContractIn) -> AllocationResponse:
-#     ssps=[po.ssp for po in contract.pos]; allocated=rev.allocate_relative_ssp(ssps, contract.transaction_price)
-#     schedules:Dict[str,Dict[str,float]]={}; allocated_res=[]
-#     for po, alloc in zip(contract.pos, allocated):
-#         allocated_res.append(AllocResult(po_id=po.po_id, ssp=po.ssp, allocated_price=alloc))
-#         if po.method=='straight_line' and po.start_date and po.end_date:
-#             schedules[po.po_id]=rev.straight_line(alloc, date.fromisoformat(po.start_date), date.fromisoformat(po.end_date))
-#         elif po.method=='point_in_time' and po.start_date:
-#             schedules[po.po_id]=rev.point_in_time(alloc, date.fromisoformat(po.start_date))
-#         elif po.method=='milestone':
-#             # po.params.milestones may be pydantic models; convert to dicts if needed
-#             ms = []
-#             for m in getattr(po.params, 'milestones', []):
-#                 if hasattr(m, 'model_dump'):
-#                     ms.append(m.model_dump())
-#                 elif hasattr(m, 'dict'):
-#                     ms.append(m.dict())
-#                 else:
-#                     ms.append(m)
-#             schedules[po.po_id]=rev.milestones(alloc, ms)
-#         elif po.method=='percent_complete':
-#             schedules[po.po_id]=rev.percent_complete(alloc, po.params.percent_schedule)
-#         else:
-#             schedules[po.po_id]={}
-#     return AllocationResponse(allocated=allocated_res, schedules=schedules)
-
 def build_allocation(contract: ContractIn) -> AllocationResponse:
     
     current_price = contract.transaction_price

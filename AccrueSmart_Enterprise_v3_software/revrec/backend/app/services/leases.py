@@ -86,7 +86,7 @@ def compute_schedule(
     payment: float,
     frequency: Freq,
     discount_rate_annual: float,
-    idc: float = 0.0,
+    initial_direct_costs: float = 0.0,
     incentives: float = 0.0,
     cpi_escalation_pct: float = 0.0,
     cpi_escalation_month: int = 12,
@@ -113,7 +113,7 @@ def compute_schedule(
         amt = _payment_for_period(payment, i, frequency, cpi_escalation_pct, cpi_escalation_month)
         pv += amt / ((1 + r) ** (i + 1))
     opening_liability = round(pv, 2)
-    opening_rou_asset = round(pv + idc - incentives, 2)
+    opening_rou_asset = round(pv + initial_direct_costs - incentives, 2)
     rows: List[Dict] = []
     liability = opening_liability
     rou = opening_rou_asset
